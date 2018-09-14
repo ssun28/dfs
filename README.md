@@ -74,7 +74,15 @@ Project Specification: https://www.cs.usfca.edu/~mmalensek/cs677/assignments/pro
      * a specific storage node(retrieve a list of files stored there)
 
 
-### Design decisions 
+### Design decisions
+   * coordinator protocol
+   
+   | Parameters         | Data Type     | Description                             |
+   | ------------------ |-------------  |:---------------------------------------:|
+   | client/storage node| string        | the request from is client or storage   |
+   | IP                 | string        | the IP address                          |
+   | function           | string        | such asking info, heartbeat, adding node|
+   
    * chunk size: 128MB
    
      If we make the chunk size in a very small size, most of the data will spilt into many chunks. When we do the reading operation, it will spend a lot of time looking up the address of the chunks. Also this will let storage node RAM under a heavy load. If we make the chunk size in a large size, it takes more time when the storage node have to restart.
