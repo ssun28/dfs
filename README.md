@@ -75,15 +75,26 @@ Project Specification: https://www.cs.usfca.edu/~mmalensek/cs677/assignments/pro
 
 
 ### Design decisions
-   * coordinator protocol
+   * Protocols
+     * Client/Storage node -------> Coordinator
 
-       | Parameters         | Data Type     | Description                             |
-       | ------------------ |-------------  |:---------------------------------------:|
-       | client/storage node| string        | the request from is client or storage   |
-       | IP                 | string        | the IP address                          |
-       | function           | string        | such asking info, heartbeat, adding node|
+         | Parameters         | Data Type     | Description                                               |
+         | ------------------ |-------------  |:---------------------------------------------------------:|
+         | client/storage node| string        | the request is from client or storage node                |
+         | IP                 | string        | the IP address                                            |
+         | function           | string        | such as adding node, removing node, asking info, heartbeat|
 
-   * chunk size: 128MB
+
+     * Client -------> Storage node
+
+         | Parameters         | Data Type     | Description                                              |
+         | ------------------ |-------------  |:--------------------------------------------------------:|
+         | client             | string        | the request is from client                               |
+         | IP                 | string        | the IP address                                           |
+         | failure            | string        | the failure in the storage node                          |
+         | function           | string        | such as asking position, storing, retrieving, asking info|
+
+   * Chunk size: 128MB
 
      If we make the chunk size in a very small size, most of the data will spilt into many chunks. When we do the reading operation, it will spend a lot of time looking up the address of the chunks. Also this will let storage node RAM under a heavy load. If we make the chunk size in a large size, it takes more time when the storage node have to restart.
 
