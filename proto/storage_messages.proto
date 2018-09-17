@@ -10,3 +10,16 @@ message StoreChunk {
 message RetrieveFile {
     string fileName = 1;
 }
+
+message ProtoWrapper{
+    string requestor = 1;
+    string ip = 2;
+    oneof function {
+        string addNode = 3;
+        string removeNode = 4;
+        string askInfo = 5;
+        string heartbeat = 6;
+        StoreChunk s = 7;
+    }
+
+}

@@ -1,5 +1,7 @@
 package edu.usfca.cs.dfs.coordinator;
 
+import edu.usfca.cs.dfs.StorageMessages;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -34,14 +36,20 @@ public class Coordinator {
         System.out.println(getLocalDataTime() + " Starting coordinator...");
 
         try {
-            InputStream dataIn;
+//            InputStream dataIn;
             while (isStarted) {
                 socket = serverSocket.accept();
                 System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");
-                // executorService.execute(new SocketTask(socket));
+                StorageMessages.ProtoWrapper protoWrapper =
+                        StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                                socket.getInputStream());
+                System.out.println("requestor is "+ protoWrapper.getRequestor());
+                System.out.println("IP is "+ protoWrapper.getIp());
 
-                dataIn = socket.getInputStream();
-                System.out.println(dataIn.read());
+//                System.out.println("Function is "+ protoWrapper.getFunctionCase());
+                // executorService.execute(new SocketTask(socket));
+//                dataIn = socket.getInputStream();
+//                System.out.println(dataIn.read());
 
             }
 
