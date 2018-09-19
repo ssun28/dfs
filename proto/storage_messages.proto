@@ -4,7 +4,9 @@ option java_package = "edu.usfca.cs.dfs";
 message StoreChunk {
     string fileName = 1;
     int32 chunkId = 2;
-    bytes data = 3;
+    string fileType = 3;
+    bytes data = 4;
+    int32 numChunks = 5;
 }
 
 message RetrieveFile {
@@ -15,11 +17,12 @@ message ProtoWrapper{
     string requestor = 1;
     string ip = 2;
     oneof function {
-        string addNode = 3;
-        string removeNode = 4;
-        string askInfo = 5;
+        string askInfo = 3;
+        string addNode = 4;
+        string removeNode = 5;
         string heartbeat = 6;
-        StoreChunk s = 7;
+        StoreChunk storeChunk = 7;
+        RetrieveFile retrieveFile = 8;
     }
 
 }
