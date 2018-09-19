@@ -107,6 +107,7 @@ Project Specification: https://www.cs.usfca.edu/~mmalensek/cs677/assignments/pro
      * Case remove node: similarly, let's assum there are four nodes now and we want to remove node2 and 16/3 = 5. Node0: 0-4, Node1: 5 - 9, Node3: 10-15(we decide to make the remaining to the last node). Then node2 will move every chunksSizes * 1/3 to other three nodes. The Node ID 2 will be stored and when next new node comes in, it will take ID 2 first.
 
    * File distribute algorithm: how files are positioned in which storage node
+   
      The idea is we will hash the fileName into 32 bits, and then do a 16 bits right shift, then we will have a 16 bits number let's called hash(fileName_16bits).
 
          result = hash(fileName_16bits) % (2^16 / numberOfNodes);
