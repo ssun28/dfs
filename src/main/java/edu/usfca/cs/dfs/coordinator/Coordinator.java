@@ -4,27 +4,31 @@ import edu.usfca.cs.dfs.StorageMessages;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Hashtable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Coordinator {
 
     public static final int PORT = 37000;
+    public static final int NTHREADS = 20;
 
     private ExecutorService executorService;
     private ServerSocket serverSocket = null;
     private Socket socket;
     private InetAddress inetAddress;
     private boolean isStarted = true;
+    private Hashtable routingTable;
 
     public Coordinator() {
         try {
-            executorService = Executors.newFixedThreadPool(20);
+            executorService = Executors.newFixedThreadPool(NTHREADS);
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
             e.printStackTrace();
@@ -47,7 +51,7 @@ public class Coordinator {
                 System.out.println("IP is "+ protoWrapper.getIp());
 
 //                System.out.println("Function is "+ protoWrapper.getFunctionCase());
-                // executorService.execute(new SocketTask(socket));
+                executorService.execute(new SocketTask(socket, routingTable));
 //                dataIn = socket.getInputStream();
 //                System.out.println(dataIn.read());
 
@@ -86,6 +90,24 @@ public class Coordinator {
             e.printStackTrace();
         }
     }
+
+//    public class SocketTask implements Runnable {
+//
+//        private Socket socket;
+//        private SocketTask inThread;
+//        private OutputThread outThread;
+//
+//        public SocketTask(Socket socket, Hashtable r) {
+//            this.socket = socket;
+//            this.outThread = new OutputThread(socket);
+//            this.inThread = new SocketTask(socket, outThread);
+//        }
+//
+//        @Override
+//        public void run() {
+//            inThread.start();
+//        }
+//    }
 
     public static void main(String[] args) {
         //System.out.println("Starting coordinator...");

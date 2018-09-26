@@ -95,7 +95,6 @@ public class Client {
         Scanner scanner = new Scanner(System.in);
         inputFile = scanner.nextLine();
 
-
         String fileName = inputFile.split("\\.")[0];
         String fileType = inputFile.split("\\.")[1];
         File file = new File("./input/"+inputFile);
@@ -131,8 +130,6 @@ public class Client {
                 b = new byte[CHUNKSIZE];
                 chunkId++;
             }
-
-
         } catch (FileNotFoundException fds) {
             System.out.println(fds.getMessage());
         } catch (IOException e) {

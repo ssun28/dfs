@@ -14,13 +14,14 @@ import java.time.format.DateTimeFormatter;
 
 public class StorageNode {
 
-    private static final String DIR = "./output/";
+    private static final String DIR = "./bigdata/ssun28/";
     public static final int PORT = 37000;
     private ServerSocket serverSocket = null;
     private Socket socket;
     private InetAddress inetAddress;
     private boolean isStarted = true;
     private int requestsNum;
+    private double diskSpace;
 
 
     public StorageNode() {
@@ -79,6 +80,7 @@ public class StorageNode {
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+                                break;
 
                         }
                     }
