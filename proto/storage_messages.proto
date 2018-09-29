@@ -23,12 +23,27 @@ message AskInfo {
 }
 
 message StorageNodeInfo {
-    string nodeId = 1;
-    string nodeIP = 2;
-    bool active = 3;
-    string spaceAvailable = 4;
-    string requestsNum = 5;
-    StoreChunk storeChunk = 6;
+    int32 nodeId = 1;
+    bool active = 2;
+    double spaceAvailable = 3;
+    int32 requestsNum = 4;
+}
+
+message Heartbeat {
+    double rtVersion = 1;
+    StorageNodeInfo storageNodeInfo = 2;
+    map<int32, StorageNodeHashSpace> routingEles = 3;
+}
+
+message RoutingEle {
+    int32 nodeId = 1;
+    StorageNodeHashSpace storageNodeHashSpace = 2;
+}
+
+message StorageNodeHashSpace {
+    string nodeIp = 1;
+    int32 spaceBegin = 2;
+    int32 spaceEnd = 3;
 }
 
 message ProtoWrapper {
@@ -38,7 +53,7 @@ message ProtoWrapper {
         AskInfo askInfo = 3;
         string addNode = 4;
         string removeNode = 5;
-        string heartbeat = 6;
+        Heartbeat heartbeat = 6;
         StoreChunk storeChunk = 7;
         RetrieveFile retrieveFile = 8;
     }

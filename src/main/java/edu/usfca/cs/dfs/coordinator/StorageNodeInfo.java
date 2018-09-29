@@ -2,26 +2,18 @@ package edu.usfca.cs.dfs.coordinator;
 
 public class StorageNodeInfo {
 
-    private String nodeIp;
     private int nodeId;
+    private String nodeIp;
     private boolean active;
     private double spaceCap;
     private int requestsNum;
 
-    public StorageNodeInfo(String nodeIp, int nodeId, boolean active, double spaceCap, int requestsNum) {
-        this.nodeIp = nodeIp;
+    public StorageNodeInfo(int nodeId, String nodeIp, boolean active, double spaceCap, int requestsNum) {
         this.nodeId = nodeId;
+        this.nodeIp = nodeIp;
         this.active = active;
         this.spaceCap = spaceCap;
         this.requestsNum = requestsNum;
-    }
-
-    public String getNodeIp() {
-        return nodeIp;
-    }
-
-    public void setNodeIp(String nodeIp) {
-        this.nodeIp = nodeIp;
     }
 
     public int getNodeId() {
@@ -30,6 +22,14 @@ public class StorageNodeInfo {
 
     public void setNodeId(int nodeId) {
         this.nodeId = nodeId;
+    }
+
+    public String getNodeIp() {
+        return nodeIp;
+    }
+
+    public void setNodeIp(String nodeIp) {
+        this.nodeIp = nodeIp;
     }
 
     public boolean isActive() {

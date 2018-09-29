@@ -23,10 +23,22 @@ public class Coordinator {
     private ServerSocket serverSocket = null;
     private Socket socket;
     private InetAddress inetAddress;
+    private CoorMetaData coorMetaData;
+
     private boolean isStarted = true;
-    private Hashtable routingTable;
+    private Hashtable<Integer, StorageNodeHashSpace> routingTable;
+    private Hashtable<Integer, StorageNodeInfo> metaDataTable;
+    private int nodeId;
+    private double timeStamp;
+
 
     public Coordinator() {
+        String coorIp = getIpAddress();
+        this.routingTable = new Hashtable<>();
+        this.metaDataTable = new Hashtable<>();
+        this.coorMetaData = new CoorMetaData(routingTable, metaDataTable, 0, 0.0, coorIp);
+        this.nodeId = 0;
+        this.timeStamp = 0.00;
         try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
             serverSocket = new ServerSocket(PORT);
@@ -39,9 +51,10 @@ public class Coordinator {
     public void start() {
         System.out.println(getLocalDataTime() + " Starting coordinator...");
 
+
         try {
 //            InputStream dataIn;
-            while (isStarted) {
+            while(isStarted) {
                 socket = serverSocket.accept();
                 System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");
                 StorageMessages.ProtoWrapper protoWrapper =
@@ -51,13 +64,19 @@ public class Coordinator {
                 System.out.println("IP is "+ protoWrapper.getIp());
 
 //                System.out.println("Function is "+ protoWrapper.getFunctionCase());
-                executorService.execute(new SocketTask(socket, routingTable));
+                SocketTask socketTask = new SocketTask(socket, coorMetaData);
+                executorService.execute(socketTask);
+                socketTask.join();
+//                executorService.execute(new SocketTask(socket, routingTable, nodeId));
+
 //                dataIn = socket.getInputStream();
 //                System.out.println(dataIn.read());
 
             }
 
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -69,17 +88,19 @@ public class Coordinator {
         return dtf.format(now);
     }
 
-    public void getIpAddress() {
+    private String getIpAddress() {
         try {
 
             inetAddress = InetAddress.getLocalHost();
             //String hostname = ip.getHostName();
             System.out.println("Coordinator IP address : " + inetAddress.getHostAddress());
+            return inetAddress.getHostAddress();
             //System.out.println("Coordinator hostname : " + hostname);
 
         } catch (Throwable t) {
             t.printStackTrace();
         }
+        return null;
     }
 
     public void quit() {
@@ -112,7 +133,6 @@ public class Coordinator {
     public static void main(String[] args) {
         //System.out.println("Starting coordinator...");
         Coordinator cd = new Coordinator();
-        cd.getIpAddress();
         cd.start();
 
     }

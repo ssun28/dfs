@@ -41,12 +41,12 @@ public class Client {
 
         clientOption = clientMenu();
 
-        if (clientOption == 7) {
+        if(clientOption == 7) {
             quit();
             return;
-        } else if (clientOption >= 1 && clientOption <= 3) {
+        }else if (clientOption >= 1 && clientOption <= 3) {
             connectServer("Coordinator");
-        } else if (clientOption == 5){
+        }else if (clientOption == 5){
             connectServer("StorageNode");
             storeFile();
         }
@@ -65,7 +65,7 @@ public class Client {
     }
 
     public void connectServer(String serverType) {
-        while (!isConnectedCoor) {
+        while(!isConnectedCoor) {
             System.out.print("Enter the " + serverType + "'s IP address : ");
             Scanner scanner = new Scanner(System.in);
             try {
@@ -104,11 +104,11 @@ public class Client {
         long numChunks = (fileSize/CHUNKSIZE) + (fileSize % CHUNKSIZE == 0 ? 0 : 1);
 
 //        System.out.println("numChunks = " + numChunks);
-        try (FileInputStream fs = new FileInputStream(file)) {
+        try(FileInputStream fs = new FileInputStream(file)) {
             int size;
             int chunkId = 0;
             byte[] b = new byte[CHUNKSIZE];
-            while ((size = fs.read(b)) != -1) {
+            while((size = fs.read(b)) != -1) {
                 System.out.println("size = " + size +"_"+"byte[] size:" + b.length);
                 ByteString data = ByteString.copyFrom(b, 0, size);
                 StorageMessages.StoreChunk storeChunkMsg
@@ -203,9 +203,19 @@ public class Client {
     }
 
     public static void main(String[] args) {
+        long a = System.currentTimeMillis();
+        System.out.println("a = " + a);
+        System.out.println("a = " + a);
+        System.out.println("a = " + a);
         Client client = new Client();
-        System.out.println(client.getLocalDataTime() + " Starting client...");
-        client.start();
+
+        long b = System.currentTimeMillis();
+        System.out.println("b = " + b);
+        System.out.println("b = " + b);System.out.println("b = " + b);
+        System.out.println(a-b);
+//        Client client = new Client();
+//        System.out.println(client.getLocalDataTime() + " Starting client...");
+//        client.start();
     }
 
 }

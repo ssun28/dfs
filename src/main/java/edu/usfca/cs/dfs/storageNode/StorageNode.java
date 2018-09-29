@@ -48,7 +48,7 @@ public class StorageNode {
         getIpAddress();
 
         try {
-            while (isStarted) {
+            while(isStarted) {
                 socket = serverSocket.accept();
 
                 System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected!");
@@ -61,8 +61,8 @@ public class StorageNode {
                         break;
                     }
                     String functionType = protoWrapper.getFunctionCase().toString();
-                    if (protoWrapper.getRequestor().equals("client")) {
-                        switch (functionType) {
+                    if(protoWrapper.getRequestor().equals("client")) {
+                        switch(functionType) {
                             case "STORECHUNK":
                                 String requestor = protoWrapper.getRequestor();
                                 String ip = protoWrapper.getIp();
@@ -75,7 +75,7 @@ public class StorageNode {
                                 byte[] b = storeChunkMsg.getData().toByteArray();
                                 File file = new File(DIR + fileName + "_" + chunkId);
 
-                                try (FileOutputStream fo = new FileOutputStream(file)) {
+                                try(FileOutputStream fo = new FileOutputStream(file)) {
                                     fo.write(b);
                                 } catch (IOException e) {
                                     e.printStackTrace();
