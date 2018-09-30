@@ -20,11 +20,14 @@ public class StorageNode {
     private Socket socket;
     private InetAddress inetAddress;
     private boolean isStarted = true;
+    private StMetaData stMetaData;
     private int requestsNum;
     private double diskSpace;
 
 
     public StorageNode() {
+        String snIp = getIpAddress();
+        this.stMetaData = new StMetaData(snIp, -1);
         this.requestsNum = 0;
         if(!createDirectory()){
             System.out.println("Creating Directory failed!!");
@@ -45,7 +48,7 @@ public class StorageNode {
     }
 
     public void start() {
-        getIpAddress();
+        HeartBeatTask hbTask = new HeartBeatTask(stMetaData);
 
         try {
             while(isStarted) {
@@ -96,13 +99,15 @@ public class StorageNode {
     }
 
 
-    private void getIpAddress() {
+    private String getIpAddress() {
         try {
             inetAddress = InetAddress.getLocalHost();
             System.out.println(getLocalDataTime() + " Starting storage node on " + inetAddress.getHostAddress() + "  ...");
+            return inetAddress.getHostAddress();
         } catch (Throwable t) {
             t.printStackTrace();
         }
+        return null;
     }
 
     private String getLocalDataTime() {
