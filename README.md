@@ -110,9 +110,9 @@ Project Specification: https://www.cs.usfca.edu/~mmalensek/cs677/assignments/pro
    
      The idea is we will hash the fileName into 32 bits, and then do a 16 bits right shift, then we will have a 16 bits number let's called hash(fileName_16bits).
 
-         result = hash(fileName_16bits) % (2^16 / numberOfNodes);
-         if result == 0 then nodeNum = result;
-         if result != 0 then nodeNum = result + 1;
+         result = hash(fileName_16bits) / (2^16 / numberOfNodes);
+         result means nth node in the hash Space
+         
 
 ### Basic components flow
   * ![basic components flow](flow.jpg)
