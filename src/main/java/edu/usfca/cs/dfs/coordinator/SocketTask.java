@@ -4,10 +4,12 @@ import edu.usfca.cs.dfs.StorageMessages;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Map;
 
-public class SocketTask extends Thread {
+public class SocketTask implements Runnable {
 
     public static final int HASHRING_PIECES = 16;
 
@@ -18,22 +20,19 @@ public class SocketTask extends Thread {
     public SocketTask(Socket socket, CoorMetaData coorMetaData) {
         this.socket = socket;
         this.coorMetaData = coorMetaData;
-
-        try {
-            this.protoWrapper = StorageMessages.ProtoWrapper.parseDelimitedFrom(
-                    socket.getInputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void run() {
         while(true) {
             try {
-                this.protoWrapper = StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                protoWrapper = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                         socket.getInputStream());
                 String requestor = protoWrapper.getRequestor();
                 String functionType = protoWrapper.getFunctionCase().toString();
+
+                System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");
+                System.out.println("requestor is "+ requestor);
+                System.out.println("IP is "+ protoWrapper.getIp());
 
                 if(requestor.equals("client") && functionType.equals("ASKINFO")) {
                     clientRequest();
@@ -63,23 +62,27 @@ public class SocketTask extends Thread {
                 break;
             default: break;
         }
-
+        quit();
     }
 
     private void getActiveNodesList() {
         System.out.println("Here is the list of active nodes from coordinator: ");
-        ArrayList<StorageNodeInfo> activeNodesList = this.coorMetaData.getActiveNodesList();
+        ArrayList<StorageNodeInfo> activeNodesList = coorMetaData.getActiveNodesList();
         for(StorageNodeInfo s: activeNodesList) {
-            System.out.println("NodeId: " + s.getNodeId() + "  , active  " + "NodeIp: " + s.getNodeIp());
+            System.out.println("NodeId: " + s.getNodeId() + "  , active  " + ", NodeIp: " + s.getNodeIp());
         }
     }
 
     private void getTotalDiskSpace() {
-
+        System.out.println("The total disk space available in the cluster (in GB) from coordinator is " + coorMetaData.getTotalDiskSpace());
     }
 
     private void getRequestsNum() {
-
+        System.out.println("Here is the list of number of requests handled by each node: ");
+        ArrayList<StorageNodeInfo> activeNodesList = coorMetaData.getActiveNodesList();
+        for(StorageNodeInfo s: activeNodesList) {
+            System.out.println("NodeId: " + s.getNodeId() + "  , number of requests: " + s.getRequestsNum() +  " , NodeIp: " + s.getNodeIp());
+        }
     }
 
     private void storageNodeRequest(String functionType) {
@@ -98,28 +101,28 @@ public class SocketTask extends Thread {
     }
 
     private void addNodeRequest() {
-        int currentNodeId = this.coorMetaData.getNodeId() + 1;
-        int newNodeNum = this.coorMetaData.getRoutingTableSize() + 1;
+        int currentNodeId = coorMetaData.getNodeId() + 1;
+        int newNodeNum = coorMetaData.getRoutingTableSize() + 1;
         int range = HASHRING_PIECES / newNodeNum;
         int rangeBegin = (newNodeNum - 1) * range;
         int[] spaceRange = new int[]{rangeBegin, 15};
 
         StorageNodeHashSpace snhs = new StorageNodeHashSpace(socket.getRemoteSocketAddress().toString().substring(1),spaceRange);
 
-        this.coorMetaData.addNodeToRoutingTable(currentNodeId, snhs);
+        coorMetaData.addNodeToRoutingTable(currentNodeId, snhs);
 
 
         System.out.println("Node_" + currentNodeId + " is allowed to add into the hash space!");
-        this.coorMetaData.setNodeId(currentNodeId);
+        coorMetaData.setNodeId(currentNodeId);
 
         StorageMessages.ProtoWrapper protoWrapperOut =
                 StorageMessages.ProtoWrapper.newBuilder()
                         .setRequestor("coordinator")
-                        .setIp(this.coorMetaData.getCoorIp())
+                        .setIp(coorMetaData.getCoorIp())
                         .setAddNode(Integer.toString(currentNodeId))
                         .build();
         try {
-            protoWrapperOut.writeDelimitedTo(this.socket.getOutputStream());
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -133,25 +136,36 @@ public class SocketTask extends Thread {
         StorageMessages.StorageNodeInfo snMsg
                 = heartBeatInMsg.getStorageNodeInfo();
 
-        StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), this.protoWrapper.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
-        this.coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
+        StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapper.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
+        coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
 
-        Map<Integer, StorageMessages.StorageNodeHashSpace> mp = this.coorMetaData.constructSnHashSpaceProto();
+        StorageMessages.Heartbeat heartBeatOutMsg;
+        StorageMessages.ProtoWrapper protoWrapper;
 
-        StorageMessages.Heartbeat heartBeatOutMsg
-                = StorageMessages.Heartbeat.newBuilder()
-                .setRtVersion(this.coorMetaData.getRtVersion())
-                .putAllRoutingEles(mp)
-                .build();
+        if (rtVersion >= coorMetaData.getRtVersion()) {
+            heartBeatOutMsg
+                    = StorageMessages.Heartbeat.newBuilder()
+                    .setRtVersion(coorMetaData.getRtVersion())
+                    .build();
+        }else {
+            Map<Integer, StorageMessages.StorageNodeHashSpace> mp = coorMetaData.constructSnHashSpaceProto();
 
-        StorageMessages.ProtoWrapper protoWrapper
+            heartBeatOutMsg
+                    = StorageMessages.Heartbeat.newBuilder()
+                    .setRtVersion(coorMetaData.getRtVersion())
+                    .putAllRoutingEles(mp)
+                    .build();
+        }
+
+        protoWrapper
                 = StorageMessages.ProtoWrapper.newBuilder()
                 .setRequestor("coordinator")
-                .setIp(this.coorMetaData.getCoorIp())
+                .setIp(coorMetaData.getCoorIp())
                 .setHeartbeat(heartBeatOutMsg)
                 .build();
+
         try {
-            protoWrapper.writeDelimitedTo(this.socket.getOutputStream());
+            protoWrapper.writeDelimitedTo(socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -160,5 +174,19 @@ public class SocketTask extends Thread {
 
     private void removeNodeRequest() {
 
+    }
+
+    private String getLocalDataTime() {
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        return dtf.format(now);
+    }
+
+    private void quit() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

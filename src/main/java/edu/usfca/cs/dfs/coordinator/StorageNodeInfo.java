@@ -20,11 +20,11 @@ public class StorageNodeInfo {
         return nodeId;
     }
 
-    public void setNodeId(int nodeId) {
+    public synchronized  void setNodeId(int nodeId) {
         this.nodeId = nodeId;
     }
 
-    public String getNodeIp() {
+    public synchronized String getNodeIp() {
         return nodeIp;
     }
 
@@ -32,27 +32,27 @@ public class StorageNodeInfo {
         this.nodeIp = nodeIp;
     }
 
-    public boolean isActive() {
+    public synchronized boolean isActive() {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public synchronized void setActive(boolean active) {
         this.active = active;
     }
 
-    public double getSpaceCap() {
+    public synchronized double getSpaceCap() {
         return spaceCap;
     }
 
-    public void setSpaceCap(double spaceCap) {
+    public synchronized void setSpaceCap(double spaceCap) {
         this.spaceCap = spaceCap;
     }
 
-    public int getRequestsNum() {
+    public synchronized int getRequestsNum() {
         return requestsNum;
     }
 
-    public void setRequestsNum(int requestsNum) {
+    public synchronized void setRequestsNum(int requestsNum) {
         this.requestsNum = requestsNum;
     }
 }

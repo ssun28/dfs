@@ -67,14 +67,22 @@ public class CoorMetaData {
     }
 
     public synchronized ArrayList<StorageNodeInfo> getActiveNodesList() {
-        ArrayList<StorageNodeInfo> storageNodesList = new ArrayList<>();
+        ArrayList<StorageNodeInfo> sl = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
             if(sn.isActive()) {
-                storageNodesList.add(sn);
+                sl.add(sn);
             }
         }
 
-        return storageNodesList;
+        return sl;
+    }
+
+    public synchronized double getTotalDiskSpace() {
+        double totalDiskSpace = 0.0;
+        for(StorageNodeInfo sn: metaDataTable.values()) {
+            totalDiskSpace += sn.getSpaceCap();
+        }
+        return totalDiskSpace;
     }
 
     public synchronized int getNodeId() {

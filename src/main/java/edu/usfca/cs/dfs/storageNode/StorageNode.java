@@ -1,6 +1,8 @@
 package edu.usfca.cs.dfs.storageNode;
 
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
+import edu.usfca.cs.dfs.coordinator.StorageNodeInfo;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,6 +13,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Hashtable;
 
 public class StorageNode {
 
@@ -21,22 +25,30 @@ public class StorageNode {
     private InetAddress inetAddress;
     private boolean isStarted = true;
     private StMetaData stMetaData;
+    private Hashtable<Integer, StorageNodeHashSpace> routingTable;
+    private Hashtable<Integer, ArrayList<String>> allFilesPosTable;
+    private StorageNodeInfo storageNodeInfo;
+    private ArrayList<Chunk> chunksList;
     private int requestsNum;
     private double diskSpace;
 
 
     public StorageNode() {
         String snIp = getIpAddress();
-        this.stMetaData = new StMetaData(snIp, -1);
+        this.routingTable = new Hashtable<>();
+        this.allFilesPosTable = new Hashtable<>();
+        this.storageNodeInfo = new StorageNodeInfo(-1,snIp, false, 0.0, 0);
+        this.chunksList = new ArrayList<>();
+        this.stMetaData = new StMetaData(routingTable, allFilesPosTable, storageNodeInfo, chunksList);
         this.requestsNum = 0;
         if(!createDirectory()){
             System.out.println("Creating Directory failed!!");
         }
-        try {
-            serverSocket = new ServerSocket(PORT);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            serverSocket = new ServerSocket(PORT);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private boolean createDirectory() {
@@ -49,53 +61,54 @@ public class StorageNode {
 
     public void start() {
         HeartBeatTask hbTask = new HeartBeatTask(stMetaData);
+        hbTask.run();
 
-        try {
-            while(isStarted) {
-                socket = serverSocket.accept();
-
-                System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected!");
-                while(true){
-                    StorageMessages.ProtoWrapper protoWrapper =
-                            StorageMessages.ProtoWrapper.parseDelimitedFrom(
-                                    socket.getInputStream());
-                    System.out.println("======================");
-                    if(protoWrapper == null){
-                        break;
-                    }
-                    String functionType = protoWrapper.getFunctionCase().toString();
-                    if(protoWrapper.getRequestor().equals("client")) {
-                        switch(functionType) {
-                            case "STORECHUNK":
-                                String requestor = protoWrapper.getRequestor();
-                                String ip = protoWrapper.getIp();
-                                StorageMessages.StoreChunk storeChunkMsg
-                                        = protoWrapper.getStoreChunk();
-                                String fileName = storeChunkMsg.getFileName();
-                                int chunkId = storeChunkMsg.getChunkId();
-                                int numChunks = storeChunkMsg.getNumChunks();
-
-                                byte[] b = storeChunkMsg.getData().toByteArray();
-                                File file = new File(DIR + fileName + "_" + chunkId);
-
-                                try(FileOutputStream fo = new FileOutputStream(file)) {
-                                    fo.write(b);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                break;
-
-                        }
-                    }
-                    System.out.println("requestor is "+ protoWrapper.getRequestor());
-                    System.out.println("IP is "+ protoWrapper.getIp());
-                }
-
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            while(isStarted) {
+//                socket = serverSocket.accept();
+//
+//                System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected!");
+//                while(true){
+//                    StorageMessages.ProtoWrapper protoWrapper =
+//                            StorageMessages.ProtoWrapper.parseDelimitedFrom(
+//                                    socket.getInputStream());
+//                    System.out.println("======================");
+//                    if(protoWrapper == null){
+//                        break;
+//                    }
+//                    String functionType = protoWrapper.getFunctionCase().toString();
+//                    if(protoWrapper.getRequestor().equals("client")) {
+//                        switch(functionType) {
+//                            case "STORECHUNK":
+//                                String requestor = protoWrapper.getRequestor();
+//                                String ip = protoWrapper.getIp();
+//                                StorageMessages.StoreChunk storeChunkMsg
+//                                        = protoWrapper.getStoreChunk();
+//                                String fileName = storeChunkMsg.getFileName();
+//                                int chunkId = storeChunkMsg.getChunkId();
+//                                int numChunks = storeChunkMsg.getNumChunks();
+//
+//                                byte[] b = storeChunkMsg.getData().toByteArray();
+//                                File file = new File(DIR + fileName + "_" + chunkId);
+//
+//                                try(FileOutputStream fo = new FileOutputStream(file)) {
+//                                    fo.write(b);
+//                                } catch (IOException e) {
+//                                    e.printStackTrace();
+//                                }
+//                                break;
+//
+//                        }
+//                    }
+//                    System.out.println("requestor is "+ protoWrapper.getRequestor());
+//                    System.out.println("IP is "+ protoWrapper.getIp());
+//                }
+//
+//            }
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
 
