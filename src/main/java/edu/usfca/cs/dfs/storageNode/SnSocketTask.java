@@ -5,26 +5,35 @@ import edu.usfca.cs.dfs.StorageMessages;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SnSocketTask implements Runnable{
 
-    private static final String DIR = "./bigdata/ssun28/";
+    public static final String DIR = "./bigdata/ssun28/";
+    public static final int PORT = 37000;
 
     private Socket socket;
     private StMetaData stMetaData;
     private StorageMessages.ProtoWrapper protoWrapperIn;
     private StorageMessages.ProtoWrapper protoWrapperOut;
+    private String oriNodeIp;
 
     public SnSocketTask(Socket socket, StMetaData stMetaData) {
         this.socket = socket;
         this.stMetaData = stMetaData;
+        this.oriNodeIp = stMetaData.getStorageNodeInfo().getNodeIp();
     }
 
     public void run() {
@@ -58,11 +67,31 @@ public class SnSocketTask implements Runnable{
                 askPosition();
                 break;
             case "STORECHUNK":
-                storeFirstChunk();
+                try {
+                    if(store3Chunks()) {
+                        protoWrapperOut =
+                                StorageMessages.ProtoWrapper.newBuilder()
+                                        .setRequestor("storageNode")
+                                        .setIp(oriNodeIp)
+                                        .setResponse("Store chunk successfully!")
+                                        .build();
+                    }else {
+                        protoWrapperOut =
+                                StorageMessages.ProtoWrapper.newBuilder()
+                                        .setRequestor("storageNode")
+                                        .setIp(oriNodeIp)
+                                        .setResponse("Store chunk failed. Please try it again!")
+                                        .build();
+                    }
+                    protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;
             case "RETRIEVEFILE":
                 break;
             case "NODEFILESLIST":
+                nodeFilesList();
                 break;
             default: break;
         }
@@ -93,7 +122,7 @@ public class SnSocketTask implements Runnable{
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
                     .setRequestor("storageNode")
-                    .setIp(stMetaData.getStorageNodeInfo().getNodeIp())
+                    .setIp(oriNodeIp)
                     .setReturnPosition(returnPositionMsg)
                     .build();
 
@@ -113,11 +142,16 @@ public class SnSocketTask implements Runnable{
         return (b0 << 8) | b1 ;
     }
 
-    private void storeFirstChunk() {
+    private void nodeFilesList() {
 
     }
 
-    private boolean storeChunk() {
+    /**
+     * Store chunk on this storage Node, update the storage Node's chunksList,
+     * send copies to the other 2 nodes and update the RoutingTable
+     * @return
+     */
+    private boolean store3Chunks() {
         if(!createDirectory()){
             System.out.println("Creating Directory failed!!");
         }
@@ -128,14 +162,70 @@ public class SnSocketTask implements Runnable{
         String fileType = storeChunkMsg.getFileType();
         int numChunks = storeChunkMsg.getNumChunks();
 
-
         byte[] b = storeChunkMsg.getData().toByteArray();
         File file = new File(DIR + fileName + "_" + chunkId);
 
         try(FileOutputStream fo = new FileOutputStream(file)) {
             fo.write(b);
+
+            Chunk chunk = new Chunk(fileName, chunkId, b, numChunks);
+            stMetaData.addChunkToChunksList(chunk);
+            String inputFileChunk = fileName+ "_" + chunkId + fileType;
+            int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
+            stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
             System.out.println("Store " + fileName + "_" + chunkId + fileType + " Successfully!");
+
+            TreeSet<Integer> nodeIdSetSuccess = new TreeSet<>();
+
+            while(nodeIdSetSuccess.size() < 2) {
+                int[] nodeIdArray = stMetaData.get2ChunkCopyNodeId(stMetaData.getStorageNodeInfo().getNodeId());
+                for(int i = 0; i < nodeIdArray.length; i++) {
+
+
+
+                    //////if socket failed
+                    Socket copyChunkSocket = new Socket();
+                    String copyChunkNodeIp = stMetaData.getRoutingTable().get(nodeIdArray[i]).getNodeIp();
+                    InetAddress serverIP = InetAddress.getByName(copyChunkNodeIp);
+                    copyChunkSocket.connect(new InetSocketAddress(serverIP, PORT), 2000);
+
+                    StorageMessages.StoreChunk chunkMsgOut
+                            = StorageMessages.StoreChunk.newBuilder()
+                            .setFileName(fileName)
+                            .setChunkId(chunkId)
+                            .setFileType(fileType)
+                            .setData(storeChunkMsg.getData())
+                            .setNumChunks(numChunks)
+                            .build();
+
+                    StorageMessages.ProtoWrapper protoWrapperOut =
+                            StorageMessages.ProtoWrapper.newBuilder()
+                                    .setRequestor("storageNode")
+                                    .setIp(oriNodeIp)
+                                    .setStoreChunk(chunkMsgOut)
+                                    .build();
+                    protoWrapperOut.writeDelimitedTo(copyChunkSocket.getOutputStream());
+
+                    StorageMessages.ProtoWrapper protoWrapperIn =
+                            StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                                    copyChunkSocket.getInputStream());
+
+                    String response = protoWrapperIn.getResponse();
+                        if (response.equals("success") && nodeIdSetSuccess.size() < 2) {
+                            nodeIdSetSuccess.add(nodeIdArray[i]);
+                            continue;
+                        }
+                }
+            }
+            updateOthersAllFilesPosTable(inputFileChunk, nodeId);
+//            for(Integer i : nodeIdSetSuccess) {
+//                stMetaData.updateAllFilesPosTable(inputFileChunk, i);
+//            }
+
             return true;
+        } catch (UnknownHostException e) {
+
+            e.printStackTrace();
         } catch (IOException e) {
             System.out.println("Store " + fileName + "_" + chunkId + fileType + " Failed!");
             e.printStackTrace();
@@ -155,6 +245,7 @@ public class SnSocketTask implements Runnable{
     private void storageNodeRequest(String functionType) {
         switch(functionType) {
             case "UPDATEALLFILESTABLE":
+                updateAllFilesTable();
                 break;
             case "STORECHUNK":
                 storeChunkCopy();
@@ -163,11 +254,73 @@ public class SnSocketTask implements Runnable{
         }
     }
 
-    private void storeChunkCopy() {
-
+    private void updateAllFilesTable() {
+        StorageMessages.UpdateAllFilesTable updateAllFilesTableMsg
+                = protoWrapperIn.getUpdateAllFilesTable();
+        String inputFileChunk = updateAllFilesTableMsg.getInputFileChunk();
+        int nodeId = updateAllFilesTableMsg.getNodeId();
+        stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
     }
 
+    private void storeChunkCopy() {
+        if (!createDirectory()) {
+            System.out.println("Creating Directory failed!!");
+        }
 
+        StorageMessages.StoreChunk storeChunkMsg
+                = protoWrapperIn.getStoreChunk();
+        String fileName = storeChunkMsg.getFileName();
+        int chunkId = storeChunkMsg.getChunkId();
+        String fileType = storeChunkMsg.getFileType();
+        int numChunks = storeChunkMsg.getNumChunks();
+
+        byte[] b = storeChunkMsg.getData().toByteArray();
+        File file = new File(DIR + fileName + "_" + chunkId);
+
+        try (FileOutputStream fo = new FileOutputStream(file)) {
+            fo.write(b);
+
+            Chunk chunk = new Chunk(fileName, chunkId, b, numChunks);
+            stMetaData.addChunkToChunksList(chunk);
+            String inputFileChunk = fileName+ "_" + chunkId + fileType;
+            int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
+            stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
+            System.out.println("Store " + fileName + "_" + chunkId + fileType + " Successfully!");
+
+
+            protoWrapperOut =
+                    StorageMessages.ProtoWrapper.newBuilder()
+                    .setRequestor("storageNode")
+                    .setIp(oriNodeIp)
+                    .setResponse("success")
+                    .build();
+
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+//            String inputFileChunk = fileName + "_" + chunkId + fileType;
+//            int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
+//            stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
+            updateOthersAllFilesPosTable(inputFileChunk, nodeId);
+            System.out.println("Store " + fileName + "_" + chunkId + fileType + " Successfully!");
+        } catch (IOException e) {
+            System.out.println("Store " + fileName + "_" + chunkId + fileType + " Failed!");
+            e.printStackTrace();
+        }
+    }
+
+    private void updateOthersAllFilesPosTable(String inputFileChunk, int nodeId) {
+        ExecutorService executorService =
+                Executors.newFixedThreadPool(Runtime.getRuntime()
+                        .availableProcessors() * 20);
+        ArrayList<String> nodeIpList = stMetaData.getNodeIpList();
+        for(String desNodeIp : nodeIpList) {
+
+            if(desNodeIp.equals(oriNodeIp)){
+                continue;
+            }
+            executorService.execute(new UpdateFilesTableTask(oriNodeIp, desNodeIp, inputFileChunk, nodeId));
+        }
+
+    }
 
     private String getLocalDataTime() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
@@ -180,6 +333,53 @@ public class SnSocketTask implements Runnable{
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    ///what if connect failed
+    public class UpdateFilesTableTask implements Runnable {
+
+        private Socket socket;
+        private InetAddress serverIP;
+        private String oriNodeIp;
+        private String desNodeIp;
+        private String inputFileChunk;
+        private int nodeId;
+
+        public UpdateFilesTableTask(String oriNodeIp, String desNodeIp, String inputFileChunk, int nodeId) {
+            this.socket = new Socket();
+            this.oriNodeIp = oriNodeIp;
+            this.desNodeIp = desNodeIp;
+            this.inputFileChunk = inputFileChunk;
+            this.nodeId = nodeId;
+        }
+
+        public void run() {
+            try {
+                serverIP = InetAddress.getByName(desNodeIp);
+                socket.connect(new InetSocketAddress(serverIP, PORT), 2000);
+
+                StorageMessages.UpdateAllFilesTable updateAllFilesTableMsg
+                        = StorageMessages.UpdateAllFilesTable.newBuilder()
+                        .setInputFileChunk(inputFileChunk)
+                        .setNodeId(nodeId)
+                        .build();
+
+                StorageMessages.ProtoWrapper protoWrapperOut =
+                        StorageMessages.ProtoWrapper.newBuilder()
+                        .setRequestor("storageNode")
+                        .setIp(oriNodeIp)
+                        .setUpdateAllFilesTable(updateAllFilesTableMsg)
+                        .build();
+
+                protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+
+                socket.close();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

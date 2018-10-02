@@ -16,8 +16,8 @@ import java.util.Scanner;
 public class HeartBeatTask implements Runnable{
 
     public static final int PORT = 37000;
-    private static final double  GIGABYTES = 1024 * 1024 * 1024;
-    private static DecimalFormat df2 = new DecimalFormat(".##");
+//    private static final double  GIGABYTES = 1024 * 1024 * 1024;
+//    private static DecimalFormat df2 = new DecimalFormat(".##");
 
     private Socket hbSocket;
     private InetAddress serverIP;
@@ -82,8 +82,8 @@ public class HeartBeatTask implements Runnable{
                     hbSocket.getInputStream());
             stMetaData.getStorageNodeInfo().setNodeId(Integer.parseInt(protoWrapperIn.getAddNode()));
             stMetaData.getStorageNodeInfo().setActive(true);
-            stMetaData.getStorageNodeInfo().setSpaceCap(Double.parseDouble(df2.format(new File("/")
-                    .getUsableSpace()/ GIGABYTES)));
+//            stMetaData.getStorageNodeInfo().setSpaceCap(Double.parseDouble(df2.format(new File("/")
+//                    .getUsableSpace()/ GIGABYTES)));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -142,7 +142,7 @@ public class HeartBeatTask implements Runnable{
                     System.out.println("Test in storage node!");
                     for(Map.Entry<Integer, StorageNodeHashSpace> e : stMetaData.getRoutingTable().entrySet()){
                         System.out.println("e.getKey() = " + e.getKey());
-                        System.out.println("e.getValue().getNodeIp() = " + e.getValue().getNodeIp());
+                        System.out.println("e.getValue().getPositionNodeIp() = " + e.getValue().getNodeIp());
                         System.out.println("e.getValue().getSpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
                         System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
 
