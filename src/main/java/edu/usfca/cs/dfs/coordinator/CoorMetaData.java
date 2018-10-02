@@ -15,7 +15,6 @@ public class CoorMetaData {
     private double rtVersion;
     private String coorIp;
 
-
     public CoorMetaData(Hashtable<Integer, StorageNodeHashSpace> routingTable, Hashtable<Integer, StorageNodeInfo> metaDataTable, int nodeId, double rtVersion, String coorIp) {
         this.routingTable = routingTable;
         this.metaDataTable = metaDataTable;
@@ -42,7 +41,7 @@ public class CoorMetaData {
 
     public synchronized Map<Integer, StorageMessages.StorageNodeHashSpace> constructSnHashSpaceProto() {
         Map<Integer, StorageMessages.StorageNodeHashSpace> mp = new HashMap<>();
-        for(Map.Entry<Integer, StorageNodeHashSpace> e : this.routingTable.entrySet()){
+        for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
             StorageNodeHashSpace s = e.getValue();
             StorageMessages.StorageNodeHashSpace sns = StorageMessages.StorageNodeHashSpace.newBuilder()
                     .setNodeIp(s.getNodeIp())

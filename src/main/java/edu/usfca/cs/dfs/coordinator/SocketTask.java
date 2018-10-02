@@ -15,7 +15,7 @@ public class SocketTask implements Runnable {
 
     private Socket socket;
     private CoorMetaData coorMetaData;
-    private StorageMessages.ProtoWrapper protoWrapper;
+    private StorageMessages.ProtoWrapper protoWrapperIn;
 
     public SocketTask(Socket socket, CoorMetaData coorMetaData) {
         this.socket = socket;
@@ -25,14 +25,14 @@ public class SocketTask implements Runnable {
     public void run() {
         while(true) {
             try {
-                protoWrapper = StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                         socket.getInputStream());
-                String requestor = protoWrapper.getRequestor();
-                String functionType = protoWrapper.getFunctionCase().toString();
+                String requestor = protoWrapperIn.getRequestor();
+                String functionType = protoWrapperIn.getFunctionCase().toString();
 
                 System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");
                 System.out.println("requestor is "+ requestor);
-                System.out.println("IP is "+ protoWrapper.getIp());
+                System.out.println("IP is "+ protoWrapperIn.getIp());
 
                 if(requestor.equals("client") && functionType.equals("ASKINFO")) {
                     clientRequest();
@@ -47,7 +47,7 @@ public class SocketTask implements Runnable {
 
     private void clientRequest() {
         StorageMessages.AskInfo AskInfo
-                = protoWrapper.getAskInfo();
+                = protoWrapperIn.getAskInfo();
         String askInfoType = AskInfo.getFunctionCase().toString();
 
         switch(askInfoType) {
@@ -111,7 +111,6 @@ public class SocketTask implements Runnable {
 
         coorMetaData.addNodeToRoutingTable(currentNodeId, snhs);
 
-
         System.out.println("Node_" + currentNodeId + " is allowed to add into the hash space!");
         coorMetaData.setNodeId(currentNodeId);
 
@@ -130,13 +129,13 @@ public class SocketTask implements Runnable {
 
     private void heartBeat() {
         StorageMessages.Heartbeat heartBeatInMsg
-                = protoWrapper.getHeartbeat();
+                = protoWrapperIn.getHeartbeat();
         double rtVersion = heartBeatInMsg.getRtVersion();
 
         StorageMessages.StorageNodeInfo snMsg
                 = heartBeatInMsg.getStorageNodeInfo();
 
-        StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapper.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
+        StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
         coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
 
         StorageMessages.Heartbeat heartBeatOutMsg;
@@ -169,7 +168,6 @@ public class SocketTask implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private void removeNodeRequest() {

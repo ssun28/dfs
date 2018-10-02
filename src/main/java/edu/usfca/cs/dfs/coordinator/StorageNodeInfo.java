@@ -1,6 +1,12 @@
 package edu.usfca.cs.dfs.coordinator;
 
+import java.io.File;
+import java.text.DecimalFormat;
+
 public class StorageNodeInfo {
+
+    private static final double  GIGABYTES = 1024 * 1024 * 1024;
+    private static DecimalFormat df2 = new DecimalFormat(".##");
 
     private int nodeId;
     private String nodeIp;
@@ -24,7 +30,7 @@ public class StorageNodeInfo {
         this.nodeId = nodeId;
     }
 
-    public synchronized String getNodeIp() {
+    public String getNodeIp() {
         return nodeIp;
     }
 
@@ -41,6 +47,8 @@ public class StorageNodeInfo {
     }
 
     public synchronized double getSpaceCap() {
+        spaceCap = Double.parseDouble(df2.format(new File("/")
+                .getUsableSpace()/ GIGABYTES));
         return spaceCap;
     }
 

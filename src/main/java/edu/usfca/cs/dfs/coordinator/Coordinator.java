@@ -1,10 +1,7 @@
 package edu.usfca.cs.dfs.coordinator;
 
-import edu.usfca.cs.dfs.StorageMessages;
-
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -67,7 +64,7 @@ public class Coordinator {
                 System.out.println("Test coordinator begin !!!!!!");
                 for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
                     System.out.println("e.getKey() = " + e.getKey());
-                    System.out.println("e.getValue().getNodeIp() = " + e.getValue().getNodeIp());
+                    System.out.println("e.getValue().getPositionNodeIp() = " + e.getValue().getNodeIp());
                     System.out.println("e.getValue().getSpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
                     System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
 
