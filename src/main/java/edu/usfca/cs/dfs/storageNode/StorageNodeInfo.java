@@ -1,4 +1,4 @@
-package edu.usfca.cs.dfs.coordinator;
+package edu.usfca.cs.dfs.storageNode;
 
 import java.io.File;
 import java.text.DecimalFormat;

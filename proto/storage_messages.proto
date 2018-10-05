@@ -46,17 +46,49 @@ message StorageNodeHashSpace {
     int32 spaceEnd = 3;
 }
 
+message NodeFilesList {
+    repeated StoreChunk storeChunk = 1;
+}
+
+message ReturnPosition {
+    int32 nodeId = 1;
+    string toStoreNodeIp = 2;
+}
+
+//message UpdateAllFilesTable {
+//    map<string, NodesList> filesTableEles = 1;
+//}
+
+message UpdateAllFilesTable {
+    string inputFileChunk = 1;
+    int32 nodeId = 2;
+}
+
+//message FilesTableEle {
+//    string inputFileChunk = 1;
+//    NodesList nodesList = 2;
+//}
+//
+//message NodesList {
+//    repeated int32 nodeId = 1;
+//}
+
 message ProtoWrapper {
     string requestor = 1;
     string ip = 2;
-    string timeStamp = 9;
+    string timeStamp = 13;
+    string response = 14;
     oneof function {
-        AskInfo askInfo = 3;
-        string addNode = 4;
-        string removeNode = 5;
-        Heartbeat heartbeat = 6;
-        StoreChunk storeChunk = 7;
-        RetrieveFile retrieveFile = 8;
+        string addNode = 3;
+        string removeNode = 4;
+        string askPosition = 5;
+        ReturnPosition returnPosition = 6;
+        AskInfo askInfo = 7;
+        Heartbeat heartbeat = 8;
+        StoreChunk storeChunk = 9;
+        RetrieveFile retrieveFile = 10;
+        NodeFilesList nodeFilesList = 11;
+        UpdateAllFilesTable updateAllFilesTable = 12;
     }
 
 }

@@ -1,8 +1,8 @@
 package edu.usfca.cs.dfs.storageNode;
 
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
-import edu.usfca.cs.dfs.coordinator.StorageNodeInfo;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,14 +21,10 @@ import java.util.concurrent.Executors;
 public class StorageNode {
 
     private static final String DIR = "./bigdata/ssun28/";
-    public static final int PORT = 37000;
-    public static final int NTHREADS = 20;
-
+    private static final int NTHREADS = 20;
 
     private ExecutorService executorService;
     private ServerSocket serverSocket = null;
-    private Socket socket;
-    private InetAddress inetAddress;
     private boolean isStarted = true;
     private StMetaData stMetaData;
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
@@ -36,7 +32,6 @@ public class StorageNode {
     private StorageNodeInfo storageNodeInfo;
     private ArrayList<Chunk> chunksList;
     private int requestsNum;
-    private double diskSpace;
 
 
     public StorageNode() {
@@ -47,12 +42,12 @@ public class StorageNode {
         this.chunksList = new ArrayList<>();
         this.stMetaData = new StMetaData(routingTable, allFilesPosTable, storageNodeInfo, chunksList);
         this.requestsNum = 0;
-        if(!createDirectory()){
-            System.out.println("Creating Directory failed!!");
-        }
+//        if(!createDirectory()){
+//            System.out.println("Creating Directory failed!!");
+//        }
         try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
-            serverSocket = new ServerSocket(PORT);
+            serverSocket = new ServerSocket(Coordinator.PORT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,7 +67,7 @@ public class StorageNode {
 
         try {
             while(isStarted) {
-                socket = serverSocket.accept();
+                Socket socket = serverSocket.accept();
 
 //                SnSocketTask snSocketTask = new SnSocketTask(socket, stMetaData);
 //                executorService.execute(snSocketTask);
@@ -126,6 +121,7 @@ public class StorageNode {
 
 
     private String getIpAddress() {
+        InetAddress inetAddress;
         try {
             inetAddress = InetAddress.getLocalHost();
             System.out.println(getLocalDataTime() + " Starting storage node on " + inetAddress.getHostAddress() + "  ...");

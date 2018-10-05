@@ -4,12 +4,14 @@ public class Chunk {
 
     private String fileName;
     private int chunkId;
+    private String fileType;
     private byte[] data;
     private int numChunks;
 
-    public Chunk(String fileName, int chunkId, byte[] data, int numChunks) {
+    public Chunk(String fileName, int chunkId, String fileType, byte[] data, int numChunks) {
         this.fileName = fileName;
         this.chunkId = chunkId;
+        this.fileType = fileType;
         this.data = data;
         this.numChunks = numChunks;
     }
@@ -28,6 +30,14 @@ public class Chunk {
 
     public void setChunkId(int chunkId) {
         this.chunkId = chunkId;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
     }
 
     public byte[] getData() {

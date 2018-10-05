@@ -1,6 +1,7 @@
 package edu.usfca.cs.dfs.storageNode;
 
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
 
 import java.io.File;
@@ -15,12 +16,13 @@ import java.util.Scanner;
 
 public class HeartBeatTask implements Runnable{
 
-    public static final int PORT = 37000;
+//    public static final int PORT = 37000;
 //    private static final double  GIGABYTES = 1024 * 1024 * 1024;
 //    private static DecimalFormat df2 = new DecimalFormat(".##");
+    private static final long CHECK_DELAY = 10;
+    private static final long KEEP_ALIVE = 5000;
 
     private Socket hbSocket;
-    private InetAddress serverIP;
     private StMetaData stMetaData;
     private double rtVerstion;
     private boolean isConnectedCoor;
@@ -43,12 +45,13 @@ public class HeartBeatTask implements Runnable{
     }
 
     private void connectCoordinator() {
+        InetAddress serverIP;
         while(!isConnectedCoor) {
             System.out.print("Enter the coordinator's IP address : ");
             Scanner scanner = new Scanner(System.in);
             try {
                 serverIP = InetAddress.getByName(scanner.nextLine());
-                hbSocket.connect(new InetSocketAddress(serverIP, PORT), 2000);
+                hbSocket.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
                 isConnectedCoor = true;
                 System.out.println("Successfully connecting with the coordinator !");
 
@@ -68,7 +71,7 @@ public class HeartBeatTask implements Runnable{
         try {
             StorageMessages.ProtoWrapper protoWrapperOut
                     = StorageMessages.ProtoWrapper.newBuilder()
-                    .setRequestor("storageNode")
+                    .setRequestor(SnSocketTask.STORAGENODE)
                     .setIp(stMetaData.getStorageNodeInfo().getNodeIp())
                     .setAddNode("true")
                     .build();
@@ -91,19 +94,19 @@ public class HeartBeatTask implements Runnable{
     }
 
     private void heartBeat() {
-        long checkDelay = 10;
-        long keepAlive = 5000;
+//        long checkDelay = 10;
+//        long keepAlive = 5000;
         long lastSendTime = System.currentTimeMillis();
 
-        StorageMessages.StorageNodeInfo storageNodeInfoMsg;
+        StorageMessages.StorageNodeInfo storageNodeInfoMsgOut;
         StorageMessages.Heartbeat heartbeatMsgOut;
         StorageMessages.ProtoWrapper protoWrapperOut;
 
 
         while(true) {
-            if(System.currentTimeMillis() - lastSendTime > keepAlive) {
+            if(System.currentTimeMillis() - lastSendTime > KEEP_ALIVE) {
                 try {
-                    storageNodeInfoMsg
+                    storageNodeInfoMsgOut
                             = StorageMessages.StorageNodeInfo.newBuilder()
                             .setNodeId(stMetaData.getStorageNodeInfo().getNodeId())
                             .setActive(stMetaData.getStorageNodeInfo().isActive())
@@ -114,12 +117,12 @@ public class HeartBeatTask implements Runnable{
                     heartbeatMsgOut
                             = StorageMessages.Heartbeat.newBuilder()
                             .setRtVersion(rtVerstion)
-                            .setStorageNodeInfo(storageNodeInfoMsg)
+                            .setStorageNodeInfo(storageNodeInfoMsgOut)
                             .build();
 
                     protoWrapperOut
                             = StorageMessages.ProtoWrapper.newBuilder()
-                            .setRequestor("storageNode")
+                            .setRequestor(SnSocketTask.STORAGENODE)
                             .setIp(stMetaData.getStorageNodeInfo().getNodeIp())
                             .setHeartbeat(heartbeatMsgOut)
                             .build();
@@ -152,7 +155,7 @@ public class HeartBeatTask implements Runnable{
                 }
             }else {
                 try {
-                    Thread.sleep(checkDelay);
+                    Thread.sleep(CHECK_DELAY);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

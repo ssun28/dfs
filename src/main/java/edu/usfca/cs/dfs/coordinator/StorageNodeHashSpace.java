@@ -1,5 +1,9 @@
 package edu.usfca.cs.dfs.coordinator;
 
+/**
+ * StorageNodeHashSpace class consists of a Storage Node's ip,
+ * the Storage Node's space range hold in the system hash ring
+ */
 public class StorageNodeHashSpace {
 
     private String nodeIp;

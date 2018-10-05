@@ -1,6 +1,7 @@
 package edu.usfca.cs.dfs.coordinator;
 
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.storageNode.StorageNodeInfo;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -11,7 +12,12 @@ import java.util.Map;
 
 public class SocketTask implements Runnable {
 
-    public static final int HASHRING_PIECES = 16;
+    private static final int HASHRING_PIECES = 16;
+    private static final String CLIENT = "client";
+    private static final String STORAGENODE = "storageNode";
+    private static final String COORDINATOR = "coordinator";
+
+    private enum AskInfoType {ACTIVENODESLIST, TOTALDISKSPACE, REQUESTSNUM};
 
     private Socket socket;
     private CoorMetaData coorMetaData;
@@ -34,9 +40,9 @@ public class SocketTask implements Runnable {
                 System.out.println("requestor is "+ requestor);
                 System.out.println("IP is "+ protoWrapperIn.getIp());
 
-                if(requestor.equals("client") && functionType.equals("ASKINFO")) {
+                if(requestor.equals(CLIENT) && functionType.equals("ASKINFO")) {
                     clientRequest();
-                }else if (requestor.equals("storageNode")) {
+                }else if (requestor.equals(STORAGENODE)) {
                     storageNodeRequest(functionType);
                 }
             } catch (IOException e) {
@@ -48,16 +54,17 @@ public class SocketTask implements Runnable {
     private void clientRequest() {
         StorageMessages.AskInfo AskInfo
                 = protoWrapperIn.getAskInfo();
-        String askInfoType = AskInfo.getFunctionCase().toString();
+        AskInfoType askInfoType = AskInfoType.valueOf(AskInfo.getFunctionCase().toString());
+//        String askInfoType = AskInfo.getFunctionCase().toString();
 
         switch(askInfoType) {
-            case "ACTIVENODESLIST":
+            case ACTIVENODESLIST:
                 getActiveNodesList();
                 break;
-            case "TOTALDISKSPACE":
+            case TOTALDISKSPACE:
                 getTotalDiskSpace();
                 break;
-            case "REQUESTSNUM":
+            case REQUESTSNUM:
                 getRequestsNum();
                 break;
             default: break;
@@ -139,7 +146,7 @@ public class SocketTask implements Runnable {
         coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
 
         StorageMessages.Heartbeat heartBeatOutMsg;
-        StorageMessages.ProtoWrapper protoWrapper;
+        StorageMessages.ProtoWrapper protoWrapperOut;
 
         if (rtVersion >= coorMetaData.getRtVersion()) {
             heartBeatOutMsg
@@ -156,7 +163,7 @@ public class SocketTask implements Runnable {
                     .build();
         }
 
-        protoWrapper
+        protoWrapperOut
                 = StorageMessages.ProtoWrapper.newBuilder()
                 .setRequestor("coordinator")
                 .setIp(coorMetaData.getCoorIp())
@@ -164,7 +171,7 @@ public class SocketTask implements Runnable {
                 .build();
 
         try {
-            protoWrapper.writeDelimitedTo(socket.getOutputStream());
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }

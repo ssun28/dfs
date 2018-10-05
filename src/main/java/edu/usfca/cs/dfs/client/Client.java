@@ -2,6 +2,7 @@ package edu.usfca.cs.dfs.client;
 
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.coordinator.Coordinator;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -14,8 +15,8 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static final int PORT = 37000;
-    public static final int CHUNKSIZE = 8000000;
+//    public static final int PORT = 37000;
+    private static final int CHUNKSIZE = 8000000;
 
     public enum functionType {STORE_CHUNK,ASK_INFO};
 
@@ -70,7 +71,7 @@ public class Client {
             Scanner scanner = new Scanner(System.in);
             try {
                 serverIP = InetAddress.getByName(scanner.nextLine());
-                client.connect(new InetSocketAddress(serverIP, PORT), 2000);
+                client.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
 
                 isConnectedCoor = true;
                 System.out.println("Successfully connecting with the " + serverType + " !");
@@ -94,9 +95,19 @@ public class Client {
         System.out.print("./input/");
         Scanner scanner = new Scanner(System.in);
         inputFile = scanner.nextLine();
+        String fileName = "";
+        String fileType = "";
 
-        String fileName = inputFile.split("\\.")[0];
-        String fileType = inputFile.split("\\.")[1];
+        System.out.println("inputFile = " + inputFile);
+        if(!inputFile.contains("\\.")) {
+            fileName = inputFile;
+//            fileType = "type";
+        }else {
+            fileName = inputFile.split("\\.")[0];
+            fileType = "." + inputFile.split("\\.")[1];
+        }
+
+        System.out.println("fileType = " + fileType);
         File file = new File("./input/"+inputFile);
         long fileSize = file.length();
 
@@ -203,19 +214,29 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        long a = System.currentTimeMillis();
-        System.out.println("a = " + a);
-        System.out.println("a = " + a);
-        System.out.println("a = " + a);
-        Client client = new Client();
+//        double  MEGABYTE = 1024 * 1024 * 1024;
+//        DecimalFormat df2 = new DecimalFormat(".##");
+//
+//
+//        long a = System.currentTimeMillis();
+//        File file = new File("/");
+//        double b = (double)file.getUsableSpace()/ (1024.0 * 1024.0 * 1024.0);
+//        System.out.println("b = " + b);
+//
+//        File[] roots = File.listRoots();
+//        for(File file1 : roots) {
+//            System.out.println(file1.getPath());
+//            System.out.println("Free Space  = " + (double)file1.getFreeSpace()/(1024 * 1024 * 1024));
+//            System.out.println("Usable Space = " + (double)file1.getUsableSpace()/(1024 * 1024 * 1024));
+//            System.out.println("Total space = " + (double)file1.getTotalSpace()/(1024 * 1024 * 1024));
+//        }
+//
+//        System.out.println(df2.format(new File("/").getUsableSpace()/MEGABYTE)); //in GB
 
-        long b = System.currentTimeMillis();
-        System.out.println("b = " + b);
-        System.out.println("b = " + b);System.out.println("b = " + b);
-        System.out.println(a-b);
 //        Client client = new Client();
 //        System.out.println(client.getLocalDataTime() + " Starting client...");
 //        client.start();
+
     }
 
 }

@@ -21,8 +21,11 @@ import java.util.concurrent.Executors;
 
 public class SnSocketTask implements Runnable{
 
-    public static final String DIR = "./bigdata/ssun28/";
-    public static final int PORT = 37000;
+    public static final String STORAGENODE = "storageNode";
+    public static final String COORDINATOR = "coordinator";
+    public static final String CLIENT = "client";
+    private static final String DIR = "./bigdata/ssun28/";
+    private static final int PORT = 37000;
 
     private Socket socket;
     private StMetaData stMetaData;
@@ -49,9 +52,9 @@ public class SnSocketTask implements Runnable{
                 System.out.println("IP is "+ protoWrapperIn.getIp());
 
                 stMetaData.increaseReqNum();
-                if(requestor.equals("client")) {
+                if(requestor.equals(CLIENT)) {
                     clientRequest(functionType);
-                }else if (requestor.equals("storageNode")) {
+                }else if (requestor.equals(STORAGENODE)) {
                     storageNodeRequest(functionType);
                 }
             } catch (IOException e) {
@@ -71,14 +74,14 @@ public class SnSocketTask implements Runnable{
                     if(store3Chunks()) {
                         protoWrapperOut =
                                 StorageMessages.ProtoWrapper.newBuilder()
-                                        .setRequestor("storageNode")
+                                        .setRequestor(STORAGENODE)
                                         .setIp(oriNodeIp)
                                         .setResponse("Store chunk successfully!")
                                         .build();
                     }else {
                         protoWrapperOut =
                                 StorageMessages.ProtoWrapper.newBuilder()
-                                        .setRequestor("storageNode")
+                                        .setRequestor(STORAGENODE)
                                         .setIp(oriNodeIp)
                                         .setResponse("Store chunk failed. Please try it again!")
                                         .build();
@@ -121,7 +124,7 @@ public class SnSocketTask implements Runnable{
 
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
-                    .setRequestor("storageNode")
+                    .setRequestor(STORAGENODE)
                     .setIp(oriNodeIp)
                     .setReturnPosition(returnPositionMsg)
                     .build();
@@ -143,7 +146,25 @@ public class SnSocketTask implements Runnable{
     }
 
     private void nodeFilesList() {
+        try {
+            ArrayList<StorageMessages.StoreChunk> nodeFilesList = stMetaData.getNodeFilesList();
+            StorageMessages.NodeFilesList nodeFilesListMsg =
+                    StorageMessages.NodeFilesList.newBuilder()
+                    .addAllStoreChunk(nodeFilesList)
+                    .build();
 
+            protoWrapperOut =
+                    StorageMessages.ProtoWrapper.newBuilder()
+                    .setRequestor(STORAGENODE)
+                    .setIp(oriNodeIp)
+                    .setNodeFilesList(nodeFilesListMsg)
+                    .build();
+
+
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -168,7 +189,7 @@ public class SnSocketTask implements Runnable{
         try(FileOutputStream fo = new FileOutputStream(file)) {
             fo.write(b);
 
-            Chunk chunk = new Chunk(fileName, chunkId, b, numChunks);
+            Chunk chunk = new Chunk(fileName, chunkId, fileType, b, numChunks);
             stMetaData.addChunkToChunksList(chunk);
             String inputFileChunk = fileName+ "_" + chunkId + fileType;
             int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
@@ -200,7 +221,7 @@ public class SnSocketTask implements Runnable{
 
                     StorageMessages.ProtoWrapper protoWrapperOut =
                             StorageMessages.ProtoWrapper.newBuilder()
-                                    .setRequestor("storageNode")
+                                    .setRequestor(STORAGENODE)
                                     .setIp(oriNodeIp)
                                     .setStoreChunk(chunkMsgOut)
                                     .build();
@@ -280,7 +301,7 @@ public class SnSocketTask implements Runnable{
         try (FileOutputStream fo = new FileOutputStream(file)) {
             fo.write(b);
 
-            Chunk chunk = new Chunk(fileName, chunkId, b, numChunks);
+            Chunk chunk = new Chunk(fileName, chunkId, fileType, b, numChunks);
             stMetaData.addChunkToChunksList(chunk);
             String inputFileChunk = fileName+ "_" + chunkId + fileType;
             int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
@@ -290,7 +311,7 @@ public class SnSocketTask implements Runnable{
 
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
-                    .setRequestor("storageNode")
+                    .setRequestor(STORAGENODE)
                     .setIp(oriNodeIp)
                     .setResponse("success")
                     .build();
@@ -367,7 +388,7 @@ public class SnSocketTask implements Runnable{
 
                 StorageMessages.ProtoWrapper protoWrapperOut =
                         StorageMessages.ProtoWrapper.newBuilder()
-                        .setRequestor("storageNode")
+                        .setRequestor(STORAGENODE)
                         .setIp(oriNodeIp)
                         .setUpdateAllFilesTable(updateAllFilesTableMsg)
                         .build();

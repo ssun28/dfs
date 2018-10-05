@@ -1,6 +1,7 @@
 package edu.usfca.cs.dfs.coordinator;
 
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.storageNode.StorageNodeInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;

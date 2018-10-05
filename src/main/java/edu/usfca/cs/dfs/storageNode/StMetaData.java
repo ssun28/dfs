@@ -2,7 +2,6 @@ package edu.usfca.cs.dfs.storageNode;
 
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
-import edu.usfca.cs.dfs.coordinator.StorageNodeInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -110,8 +109,24 @@ public class StMetaData {
         this.storageNodeInfo = storageNodeInfo;
     }
 
-    public ArrayList<Chunk> getChunksList() {
+    public synchronized ArrayList<Chunk> getChunksList() {
         return chunksList;
+    }
+
+    public synchronized ArrayList<StorageMessages.StoreChunk> getNodeFilesList() {
+        ArrayList<StorageMessages.StoreChunk> nodeFilesList = new ArrayList<>();
+        for(Chunk c : chunksList) {
+            StorageMessages.StoreChunk storeChunkMsg =
+                    StorageMessages.StoreChunk.newBuilder()
+                    .setFileName(c.getFileName())
+                    .setChunkId(c.getChunkId())
+                    .setFileType(c.getFileType())
+                    .build();
+
+            nodeFilesList.add(storeChunkMsg);
+        }
+
+        return nodeFilesList;
     }
 
     public void setChunksList(ArrayList<Chunk> chunksList) {
