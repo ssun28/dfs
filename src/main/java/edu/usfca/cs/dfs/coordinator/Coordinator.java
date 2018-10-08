@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Hashtable;
@@ -88,10 +89,9 @@ public class Coordinator {
             System.out.println(getLocalDataTime() + " Starting coordinator...");
             inetAddress = InetAddress.getLocalHost();
             System.out.println("Coordinator IP address : " + inetAddress.getHostAddress());
-
             return inetAddress.getHostAddress();
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
         }
         return null;
     }

@@ -66,23 +66,47 @@ public class CoorMetaData {
         this.metaDataTable.put(nodeId, sn);
     }
 
-    public synchronized ArrayList<StorageNodeInfo> getActiveNodesList() {
-        ArrayList<StorageNodeInfo> sl = new ArrayList<>();
+    public synchronized ArrayList<StorageMessages.ActiveNode> getActiveNodesList() {
+        ArrayList<StorageMessages.ActiveNode> sa = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
             if(sn.isActive()) {
-                sl.add(sn);
+                StorageMessages.ActiveNode activeNodeMsg
+                        = StorageMessages.ActiveNode.newBuilder()
+                        .setNodeId(sn.getNodeId())
+                        .setNodeIp(sn.getNodeIp())
+                        .build();
+                sa.add(activeNodeMsg);
             }
         }
-
-        return sl;
+        return sa;
     }
 
-    public synchronized double getTotalDiskSpace() {
-        double totalDiskSpace = 0.0;
+    public synchronized ArrayList<StorageMessages.DiskSpace> getTotalDiskSpace() {
+        ArrayList<StorageMessages.DiskSpace> sd = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
-            totalDiskSpace += sn.getSpaceCap();
+            StorageMessages.DiskSpace diskSpaceMsg
+                    = StorageMessages.DiskSpace.newBuilder()
+                    .setNodeId(sn.getNodeId())
+                    .setNodeIp(sn.getNodeIp())
+                    .setSpace(sn.getSpaceCap())
+                    .build();
+            sd.add(diskSpaceMsg);
         }
-        return totalDiskSpace;
+        return sd;
+    }
+
+    public synchronized ArrayList<StorageMessages.NodeRequestsNum> getNodeRuquestsNum() {
+        ArrayList<StorageMessages.NodeRequestsNum> sr = new ArrayList<>();
+        for(StorageNodeInfo sn: metaDataTable.values()) {
+            StorageMessages.NodeRequestsNum nodeRequestsNumMsg
+                    = StorageMessages.NodeRequestsNum.newBuilder()
+                    .setNodeId(sn.getNodeId())
+                    .setNodeIp(sn.getNodeIp())
+                    .setRequestsNum(sn.getRequestsNum())
+                    .build();
+            sr.add(nodeRequestsNumMsg);
+        }
+        return sr;
     }
 
     public synchronized int getNodeId() {

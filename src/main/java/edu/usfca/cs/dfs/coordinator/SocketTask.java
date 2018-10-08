@@ -22,6 +22,7 @@ public class SocketTask implements Runnable {
     private Socket socket;
     private CoorMetaData coorMetaData;
     private StorageMessages.ProtoWrapper protoWrapperIn;
+    private StorageMessages.ProtoWrapper protoWrapperOut;
 
     public SocketTask(Socket socket, CoorMetaData coorMetaData) {
         this.socket = socket;
@@ -73,22 +74,62 @@ public class SocketTask implements Runnable {
     }
 
     private void getActiveNodesList() {
-        System.out.println("Here is the list of active nodes from coordinator: ");
-        ArrayList<StorageNodeInfo> activeNodesList = coorMetaData.getActiveNodesList();
-        for(StorageNodeInfo s: activeNodesList) {
-            System.out.println("NodeId: " + s.getNodeId() + "  , active  " + ", NodeIp: " + s.getNodeIp());
-        }
+        ArrayList<StorageMessages.ActiveNode> activeNodesList = coorMetaData.getActiveNodesList();
+        StorageMessages.ActiveNodesList activeNodesListMsgOut
+                = StorageMessages.ActiveNodesList.newBuilder()
+                .addAllActiveNode(activeNodesList)
+                .build();
+
+        StorageMessages.AskInfo askInfoMsgOut
+                = StorageMessages.AskInfo.newBuilder()
+                .setResActiveNodesList(activeNodesListMsgOut)
+                .build();
+
+        clientRequestWrapperOut(askInfoMsgOut);
     }
 
     private void getTotalDiskSpace() {
-        System.out.println("The total disk space available in the cluster (in GB) from coordinator is " + coorMetaData.getTotalDiskSpace());
+        ArrayList<StorageMessages.DiskSpace> diskSpaceList = coorMetaData.getTotalDiskSpace();
+        StorageMessages.TotalDiskSpace totalDiskSpaceMsgOut
+                = StorageMessages.TotalDiskSpace.newBuilder()
+                .addAllDiskSpace(diskSpaceList)
+                .build();
+
+        StorageMessages.AskInfo askInfoMsgOut
+                = StorageMessages.AskInfo.newBuilder()
+                .setResTotalDiskSpace(totalDiskSpaceMsgOut)
+                .build();
+
+        clientRequestWrapperOut(askInfoMsgOut);
     }
 
     private void getRequestsNum() {
-        System.out.println("Here is the list of number of requests handled by each node: ");
-        ArrayList<StorageNodeInfo> activeNodesList = coorMetaData.getActiveNodesList();
-        for(StorageNodeInfo s: activeNodesList) {
-            System.out.println("NodeId: " + s.getNodeId() + "  , number of requests: " + s.getRequestsNum() +  " , NodeIp: " + s.getNodeIp());
+        ArrayList<StorageMessages.NodeRequestsNum> nodeRequestsNumsList = coorMetaData.getNodeRuquestsNum();
+        StorageMessages.RequestsNum requestsNumMsgOut
+                = StorageMessages.RequestsNum.newBuilder()
+                .addAllNodeRequestsNum(nodeRequestsNumsList)
+                .build();
+
+        StorageMessages.AskInfo askInfoMsgOut
+                = StorageMessages.AskInfo.newBuilder()
+                .setResRequestsNum(requestsNumMsgOut)
+                .build();
+
+        clientRequestWrapperOut(askInfoMsgOut);
+    }
+
+    private void clientRequestWrapperOut(StorageMessages.AskInfo askInfoMsgOut) {
+        try {
+            protoWrapperOut =
+                    StorageMessages.ProtoWrapper.newBuilder()
+                            .setRequestor(COORDINATOR)
+                            .setIp(coorMetaData.getCoorIp())
+                            .setAskInfo(askInfoMsgOut)
+                            .build();
+
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
