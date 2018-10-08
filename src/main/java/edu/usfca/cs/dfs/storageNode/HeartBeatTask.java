@@ -88,6 +88,17 @@ public class HeartBeatTask implements Runnable{
 //            stMetaData.getStorageNodeInfo().setSpaceCap(Double.parseDouble(df2.format(new File("/")
 //                    .getUsableSpace()/ GIGABYTES)));
 
+            File dirFile = new File(SnSocketTask.DIR);
+
+            if(dirFile.exists()) {
+                String[] entries = dirFile.list();
+                for (String s : entries) {
+                    File currentFile = new File(dirFile.getPath(), s);
+                    currentFile.delete();
+                }
+                System.out.println("All the old files present in the storage directory have been removed successfully!");
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }

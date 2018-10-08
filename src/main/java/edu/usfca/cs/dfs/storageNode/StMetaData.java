@@ -87,13 +87,49 @@ public class StMetaData {
     }
 
     public synchronized void updateAllFilesPosTable(String inputFileChunk, int nodeId) {
-        if(allFilesPosTable.contains(inputFileChunk)) {
-            allFilesPosTable.get(inputFileChunk).add(nodeId);
-        }else {
-            ArrayList<Integer> nodeIdList = new ArrayList<>();
+        ArrayList<Integer> nodeIdList = allFilesPosTable.get(inputFileChunk);
+
+        if(nodeIdList == null) {
+            nodeIdList = new ArrayList<>();
             nodeIdList.add(nodeId);
-            allFilesPosTable.put(inputFileChunk, nodeIdList);
+        }else {
+            nodeIdList.add(nodeId);
         }
+        allFilesPosTable.put(inputFileChunk, nodeIdList);
+
+    }
+
+    public synchronized Hashtable<String, StorageMessages.NodeIdList> getRetrieveChunksPos(String fileName, String fileType) {
+        Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = new Hashtable<>();
+        for(String s : allFilesPosTable.keySet()) {
+            String sfileName;
+            String sfileType = "";
+            if(s.contains(".")) {
+                sfileName = s.split("\\.")[0];
+                sfileType = "." + s.split("\\.")[1];
+            }else {
+                sfileName = s;
+            }
+
+            int index = sfileName.lastIndexOf("_");
+            String fileNamePre = sfileName.substring(0, index);
+            if(fileName.equals(fileNamePre) && sfileType.equals(fileType)) {
+                StorageMessages.NodeIdList nodeIdListMsg
+                        = StorageMessages.NodeIdList.newBuilder()
+                        .addAllNodeId(allFilesPosTable.get(s))
+                        .build();
+                retrieveChunksPosTable.put(s, nodeIdListMsg);
+            }
+        }
+        return retrieveChunksPosTable;
+    }
+
+    public synchronized Hashtable<Integer, String> getNodeIpTable() {
+        Hashtable<Integer, String> nodeIpTable = new Hashtable<>();
+        for(Map.Entry<Integer, StorageNodeHashSpace> node: routingTable.entrySet()) {
+            nodeIpTable.put(node.getKey(), node.getValue().getNodeIp());
+        }
+        return nodeIpTable;
     }
 
     ///
@@ -127,6 +163,15 @@ public class StMetaData {
         }
 
         return nodeFilesList;
+    }
+
+    public synchronized Chunk getChunk(String fileName, int chunkId, String fileType) {
+        for(Chunk c : chunksList) {
+            if(fileName.equals(c.getFileName()) && chunkId == c.getChunkId() && fileType.equals(c.getFileType())) {
+                return c;
+            }
+        }
+        return null;
     }
 
     public void setChunksList(ArrayList<Chunk> chunksList) {

@@ -42,9 +42,9 @@ public class StorageNode {
         this.chunksList = new ArrayList<>();
         this.stMetaData = new StMetaData(routingTable, allFilesPosTable, storageNodeInfo, chunksList);
         this.requestsNum = 0;
-//        if(!createDirectory()){
-//            System.out.println("Creating Directory failed!!");
-//        }
+        if(!createDirectory()){
+            System.out.println("Creating Directory failed!!");
+        }
         try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
             serverSocket = new ServerSocket(Coordinator.PORT);
