@@ -9,17 +9,47 @@ message StoreChunk {
     int32 numChunks = 5;
 }
 
-message RetrieveFile {
-    string fileName = 1;
-}
-
 message AskInfo {
     oneof function {
         bool activeNodesList = 1;
-        bool totalDiskSpace = 2;
-        bool requestsNum = 3;
-        StorageNodeInfo nodeInfo = 4;
+        ActiveNodesList resActiveNodesList = 2;
+        bool totalDiskSpace = 3;
+        TotalDiskSpace resTotalDiskSpace = 4;
+        bool requestsNum = 5;
+        RequestsNum resRequestsNum = 6;
+        bool nodeFilesList = 7;
+        NodeFilesList resNodeFilesList = 8;
+        //StorageNodeInfo nodeInfo = 7;
     }
+}
+
+message ActiveNodesList {
+    repeated ActiveNode activeNode = 1;
+}
+
+message ActiveNode {
+    int32 nodeId = 1;
+    string nodeIp = 2;
+}
+
+message TotalDiskSpace {
+    repeated DiskSpace diskSpace = 1;
+}
+
+message DiskSpace {
+    int32 nodeId = 1;
+    string nodeIp = 2;
+    double space = 3;
+}
+
+message RequestsNum {
+    repeated NodeRequestsNum nodeRequestsNum = 1;
+}
+
+message NodeRequestsNum {
+    int32 nodeId = 1;
+    string nodeIp = 2;
+    int32 requestsNum = 3;
 }
 
 message StorageNodeInfo {
@@ -73,6 +103,25 @@ message UpdateAllFilesTable {
 //    repeated int32 nodeId = 1;
 //}
 
+//resChunkPosInfo = nodeId;nodeIp;numChunks
+message ResChunksPos {
+    map<string, NodeIdList> ChunksPos = 1;
+    map<int32, string> NodeIpTable = 2;
+}
+
+message NodeIdList {
+    repeated int32 nodeId = 1;
+}
+
+message RetrieveFile {
+    string resChunkStatus = 1;
+    oneof function {
+        string askChunksPos = 2;
+        ResChunksPos resChunksPos = 3;
+        StoreChunk retrieveChunk = 4;
+    }
+}
+
 message ProtoWrapper {
     string requestor = 1;
     string ip = 2;
@@ -87,7 +136,7 @@ message ProtoWrapper {
         Heartbeat heartbeat = 8;
         StoreChunk storeChunk = 9;
         RetrieveFile retrieveFile = 10;
-        NodeFilesList nodeFilesList = 11;
+//        NodeFilesList nodeFilesList = 11;
         UpdateAllFilesTable updateAllFilesTable = 12;
     }
 
