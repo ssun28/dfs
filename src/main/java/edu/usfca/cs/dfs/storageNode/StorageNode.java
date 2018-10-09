@@ -42,15 +42,15 @@ public class StorageNode {
         this.chunksList = new ArrayList<>();
         this.stMetaData = new StMetaData(routingTable, allFilesPosTable, storageNodeInfo, chunksList);
         this.requestsNum = 0;
-        if(!createDirectory()){
-            System.out.println("Creating Directory failed!!");
-        }
-        try {
+//        if(!createDirectory()){
+//            System.out.println("Creating Directory failed!!");
+//        }
+//        try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
-            serverSocket = new ServerSocket(Coordinator.PORT);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//            serverSocket = new ServerSocket(Coordinator.PORT);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     private boolean createDirectory() {
@@ -62,8 +62,8 @@ public class StorageNode {
     }
 
     public void start() {
-//        HeartBeatTask hbTask = new HeartBeatTask(stMetaData);
-//        hbTask.run();
+        HeartBeatTask hbTask = new HeartBeatTask(stMetaData);
+        hbTask.run();
 
         try {
             while(isStarted) {
@@ -126,8 +126,8 @@ public class StorageNode {
             inetAddress = InetAddress.getLocalHost();
             System.out.println(getLocalDataTime() + " Starting storage node on " + inetAddress.getHostAddress() + "  ...");
             return inetAddress.getHostAddress();
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
         }
         return null;
     }

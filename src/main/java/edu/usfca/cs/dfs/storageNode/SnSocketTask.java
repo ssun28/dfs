@@ -104,7 +104,7 @@ public class SnSocketTask implements Runnable{
                     retrieveChunk(retrieveFileMsgIn);
                 }
                 break;
-            case "NODEFILESLIST":
+            case "ASKINFO":
                 nodeFilesList();
                 break;
             default: break;
@@ -345,11 +345,16 @@ public class SnSocketTask implements Runnable{
                             .addAllStoreChunk(nodeFilesList)
                             .build();
 
+            StorageMessages.AskInfo askInfoMsgOut
+                    = StorageMessages.AskInfo.newBuilder()
+                    .setResNodeFilesList(nodeFilesListMsg)
+                    .build();
+
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
                             .setRequestor(STORAGENODE)
                             .setIp(oriNodeIp)
-                            .setNodeFilesList(nodeFilesListMsg)
+                            .setAskInfo(askInfoMsgOut)
                             .build();
 
 

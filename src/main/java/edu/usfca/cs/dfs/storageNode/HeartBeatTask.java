@@ -83,7 +83,9 @@ public class HeartBeatTask implements Runnable{
 //                    = StorageMessages.ProtoWrapper.parseDelimitedFrom(hbSocket.getInputStream());
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     hbSocket.getInputStream());
-            stMetaData.getStorageNodeInfo().setNodeId(Integer.parseInt(protoWrapperIn.getAddNode()));
+            int nodeId = Integer.parseInt(protoWrapperIn.getAddNode());
+            System.out.println("nodeId = " + nodeId);
+            stMetaData.getStorageNodeInfo().setNodeId(nodeId);
             stMetaData.getStorageNodeInfo().setActive(true);
 //            stMetaData.getStorageNodeInfo().setSpaceCap(Double.parseDouble(df2.format(new File("/")
 //                    .getUsableSpace()/ GIGABYTES)));
@@ -152,13 +154,19 @@ public class HeartBeatTask implements Runnable{
 
                     lastSendTime = System.currentTimeMillis();
 
-
-                    System.out.println("Test in storage node!");
+                    System.out.println();
+                    System.out.println("node info");
+                    System.out.println("nodeId: "+ stMetaData.getStorageNodeInfo().getNodeId());
+                    System.out.println("nodeIp: " + stMetaData.getStorageNodeInfo().getNodeIp());
+                    int[] rangeArray = stMetaData.getRoutingTable().get(stMetaData.getStorageNodeInfo().getNodeId()).getSpaceRange();
+                    System.out.println("range: " + rangeArray[0] + "~" + rangeArray[1]);
+                    System.out.println("########################");
+                    System.out.println("Current routing table:");
                     for(Map.Entry<Integer, StorageNodeHashSpace> e : stMetaData.getRoutingTable().entrySet()){
                         System.out.println("e.getKey() = " + e.getKey());
-                        System.out.println("e.getValue().getPositionNodeIp() = " + e.getValue().getNodeIp());
-                        System.out.println("e.getValue().getSpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
-                        System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
+                        System.out.println("PositionNodeIp() = " + e.getValue().getNodeIp());
+                        System.out.println("SpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
+                        System.out.println("SpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
 
                     }
                 } catch (IOException e) {

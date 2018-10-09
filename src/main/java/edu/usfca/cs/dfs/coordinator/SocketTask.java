@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class SocketTask implements Runnable {
 
-    private static final int HASHRING_PIECES = 16;
+    private static final int HASHRING_PIECES = (int)Math.pow(2,16);
     private static final String CLIENT = "client";
     private static final String STORAGENODE = "storageNode";
     private static final String COORDINATOR = "coordinator";
@@ -30,7 +30,7 @@ public class SocketTask implements Runnable {
     }
 
     public void run() {
-        while(true) {
+//        while(true) {
             try {
                 protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                         socket.getInputStream());
@@ -49,7 +49,7 @@ public class SocketTask implements Runnable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
+//        }
     }
 
     private void clientRequest() {
@@ -137,13 +137,14 @@ public class SocketTask implements Runnable {
         switch (functionType) {
             case "ADDNODE":
                 addNodeRequest();
+                heartBeat();
                 break;
             case "REMOVENODE":
                 removeNodeRequest();
                 break;
-            case "HEARTBEAT":
-                heartBeat();
-                break;
+//            case "HEARTBEAT":
+//
+//                break;
             default: break;
         }
     }
@@ -153,13 +154,22 @@ public class SocketTask implements Runnable {
         int newNodeNum = coorMetaData.getRoutingTableSize() + 1;
         int range = HASHRING_PIECES / newNodeNum;
         int rangeBegin = (newNodeNum - 1) * range;
-        int[] spaceRange = new int[]{rangeBegin, 15};
+        int[] spaceRange = new int[]{rangeBegin, (int)Math.pow(2, 16) - 1};
 
-        StorageNodeHashSpace snhs = new StorageNodeHashSpace(socket.getRemoteSocketAddress().toString().substring(1),spaceRange);
+        StorageNodeHashSpace snhs = new StorageNodeHashSpace(protoWrapperIn.getIp(), spaceRange);
 
-        coorMetaData.addNodeToRoutingTable(currentNodeId, snhs);
+        coorMetaData.addNodeToRoutingTable(newNodeNum, currentNodeId, snhs);
 
         System.out.println("Node_" + currentNodeId + " is allowed to add into the hash space!");
+
+        System.out.println("Test coordinator begin !!!!!!");
+        for(Map.Entry<Integer, StorageNodeHashSpace> e : coorMetaData.getRoutingTable().entrySet()){
+            System.out.println("nodeId = " + e.getKey());
+            System.out.println("PositionNodeIp() = " + e.getValue().getNodeIp());
+            System.out.println("SpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
+            System.out.println("SpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
+        }
+
         coorMetaData.setNodeId(currentNodeId);
 
         StorageMessages.ProtoWrapper protoWrapperOut =
@@ -173,48 +183,56 @@ public class SocketTask implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        coorMetaData.setRtVersion(coorMetaData.getRtVersion() + 0.1);
     }
 
     private void heartBeat() {
-        StorageMessages.Heartbeat heartBeatInMsg
-                = protoWrapperIn.getHeartbeat();
-        double rtVersion = heartBeatInMsg.getRtVersion();
+        while(true) {
+            try {
+                protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                        socket.getInputStream());
 
-        StorageMessages.StorageNodeInfo snMsg
-                = heartBeatInMsg.getStorageNodeInfo();
+                StorageMessages.Heartbeat heartBeatInMsg
+                        = protoWrapperIn.getHeartbeat();
+                double rtVersion = heartBeatInMsg.getRtVersion();
 
-        StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
-        coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
+                StorageMessages.StorageNodeInfo snMsg
+                        = heartBeatInMsg.getStorageNodeInfo();
 
-        StorageMessages.Heartbeat heartBeatOutMsg;
-        StorageMessages.ProtoWrapper protoWrapperOut;
+                StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
+                coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
 
-        if (rtVersion >= coorMetaData.getRtVersion()) {
-            heartBeatOutMsg
-                    = StorageMessages.Heartbeat.newBuilder()
-                    .setRtVersion(coorMetaData.getRtVersion())
-                    .build();
-        }else {
-            Map<Integer, StorageMessages.StorageNodeHashSpace> mp = coorMetaData.constructSnHashSpaceProto();
+                StorageMessages.Heartbeat heartBeatOutMsg;
+                StorageMessages.ProtoWrapper protoWrapperOut;
 
-            heartBeatOutMsg
-                    = StorageMessages.Heartbeat.newBuilder()
-                    .setRtVersion(coorMetaData.getRtVersion())
-                    .putAllRoutingEles(mp)
-                    .build();
-        }
+                if (rtVersion >= coorMetaData.getRtVersion()) {
+                    heartBeatOutMsg
+                            = StorageMessages.Heartbeat.newBuilder()
+                            .setRtVersion(coorMetaData.getRtVersion())
+                            .build();
+                } else {
+                    Map<Integer, StorageMessages.StorageNodeHashSpace> mp = coorMetaData.constructSnHashSpaceProto();
 
-        protoWrapperOut
-                = StorageMessages.ProtoWrapper.newBuilder()
-                .setRequestor("coordinator")
-                .setIp(coorMetaData.getCoorIp())
-                .setHeartbeat(heartBeatOutMsg)
-                .build();
+                    heartBeatOutMsg
+                            = StorageMessages.Heartbeat.newBuilder()
+                            .setRtVersion(coorMetaData.getRtVersion())
+                            .putAllRoutingEles(mp)
+                            .build();
+                }
 
-        try {
-            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
+                protoWrapperOut
+                        = StorageMessages.ProtoWrapper.newBuilder()
+                        .setRequestor("coordinator")
+                        .setIp(coorMetaData.getCoorIp())
+                        .setHeartbeat(heartBeatOutMsg)
+                        .build();
+
+
+                protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -60,14 +60,14 @@ public class Coordinator {
 //                System.out.println("Function is "+ protoWrapper.getFunctionCase());
                 SocketTask socketTask = new SocketTask(socket, coorMetaData);
                 executorService.execute(socketTask);
-                System.out.println("Test coordinator begin !!!!!!");
-                for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
-                    System.out.println("e.getKey() = " + e.getKey());
-                    System.out.println("e.getValue().getPositionNodeIp() = " + e.getValue().getNodeIp());
-                    System.out.println("e.getValue().getSpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
-                    System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
-
-                }
+//                System.out.println("Test coordinator begin !!!!!!");
+//                for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
+//                    System.out.println("e.getKey() = " + e.getKey());
+//                    System.out.println("e.getValue().getPositionNodeIp() = " + e.getValue().getNodeIp());
+//                    System.out.println("e.getValue().getSpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
+//                    System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
+//
+//                }
 //                executorService.execute(new SocketTask(socket, routingTable, nodeId));
 
             }

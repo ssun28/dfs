@@ -3,7 +3,6 @@ package edu.usfca.cs.dfs.client;
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.coordinator.Coordinator;
-import edu.usfca.cs.dfs.storageNode.StorageNodeInfo;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -12,14 +11,16 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Client {
 
 //    public static final int PORT = 37000;
     private static final int CHUNKSIZE = 8000000;
-    private static final String CLIENT = "client";
+    private static final int NTHREADS = 20;
+    public static final String CLIENT = "client";
     private static final String STORAGENODE = "storageNode";
     private static final String COORDINATOR = "coordinator";
 
@@ -65,8 +66,17 @@ public class Client {
             }
         }else if (clientOption >=4 && clientOption <= 6){
             connectServer(STORAGENODE);
-
-            storeFile();
+            switch (clientOption) {
+                case 4:
+                    getStorageNodeFilesList();
+                    break;
+                case 5:
+                    storeFile();
+                    break;
+                case 6:
+                    break;
+                default: break;
+            }
         }
 
         start();
@@ -96,8 +106,6 @@ public class Client {
         }
         return userOption;
     }
-
-
 
     public void connectServer(String serverType) {
         while(!isConnectedCoor) {
@@ -129,7 +137,7 @@ public class Client {
                     .setActiveNodesList(true)
                     .build();
 
-            toCoorRequestWapperOut(askInfoMsgOut);
+            askInfoRequestWapperOut(askInfoMsgOut);
 
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     client.getInputStream());
@@ -154,7 +162,7 @@ public class Client {
                     .setTotalDiskSpace(true)
                     .build();
 
-            toCoorRequestWapperOut(askInfoMsgOut);
+            askInfoRequestWapperOut(askInfoMsgOut);
 
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     client.getInputStream());
@@ -182,7 +190,7 @@ public class Client {
                     .setRequestsNum(true)
                     .build();
 
-            toCoorRequestWapperOut(askInfoMsgOut);
+            askInfoRequestWapperOut(askInfoMsgOut);
 
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     client.getInputStream());
@@ -200,7 +208,7 @@ public class Client {
         }
     }
 
-    private void toCoorRequestWapperOut(StorageMessages.AskInfo askInfoMsgOut) {
+    private void askInfoRequestWapperOut(StorageMessages.AskInfo askInfoMsgOut) {
         try {
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
@@ -210,6 +218,31 @@ public class Client {
                             .build();
 
             protoWrapperOut.writeDelimitedTo(client.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void getStorageNodeFilesList() {
+        try {
+            StorageMessages.AskInfo askInfoMsgOut
+                    = StorageMessages.AskInfo.newBuilder()
+                    .setNodeFilesList(true)
+                    .build();
+
+            askInfoRequestWapperOut(askInfoMsgOut);
+
+            protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                    client.getInputStream());
+
+            StorageMessages.AskInfo askInfoMsgIn = protoWrapperIn.getAskInfo();
+            StorageMessages.NodeFilesList nodeFilesList = askInfoMsgIn.getResNodeFilesList();
+
+            System.out.println("Here is the list of files stored on the given storage node: ");
+            for(StorageMessages.StoreChunk c : nodeFilesList.getStoreChunkList()) {
+                System.out.println(c.getFileName() + "_" + c.getChunkId() + c.getFileType());
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -248,35 +281,47 @@ public class Client {
 
 //        System.out.println("numChunks = " + numChunks);
         try(FileInputStream fs = new FileInputStream(f)) {
+            ExecutorService executorService = Executors.newFixedThreadPool(NTHREADS);
+
             int size;
             int chunkId = 0;
             byte[] b = new byte[CHUNKSIZE];
+            ClientMetaData clientMetaData = new ClientMetaData(fileName, fileType, (int)numChunks, clientIp, serverIP);
             while((size = fs.read(b)) != -1) {
                 System.out.println("size = " + size +"_"+"byte[] size:" + b.length);
                 ByteString data = ByteString.copyFrom(b, 0, size);
-                StorageMessages.StoreChunk storeChunkMsg
-                        = StorageMessages.StoreChunk.newBuilder()
-                        .setFileName(fileName)
-                        .setFileType(fileType)
-                        .setChunkId(chunkId)
-                        .setData(data)
-                        .setNumChunks((int)numChunks)
-                        .build();
 
-                StorageMessages.ProtoWrapper protoWrapper =
-                        StorageMessages.ProtoWrapper.newBuilder()
-                                .setRequestor("client")
-                                .setIp(inetAddress.getHostAddress())
-                                .setStoreChunk(storeChunkMsg)
-                                .build();
-                protoWrapper.writeDelimitedTo(client.getOutputStream());
+                StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, data);
+                executorService.execute(storeChunkTask);
+
+
+//                StorageMessages.StoreChunk storeChunkMsg
+//                        = StorageMessages.StoreChunk.newBuilder()
+//                        .setFileName(fileName)
+//                        .setFileType(fileType)
+//                        .setChunkId(chunkId)
+//                        .setData(data)
+//                        .setNumChunks((int)numChunks)
+//                        .build();
+//
+//                StorageMessages.ProtoWrapper protoWrapper =
+//                        StorageMessages.ProtoWrapper.newBuilder()
+//                                .setRequestor("client")
+//                                .setIp(inetAddress.getHostAddress())
+//                                .setStoreChunk(storeChunkMsg)
+//                                .build();
+//                protoWrapper.writeDelimitedTo(client.getOutputStream());
                 b = new byte[CHUNKSIZE];
                 chunkId++;
             }
+            Thread.currentThread().join();
+
         } catch (FileNotFoundException fds) {
             System.out.println(fds.getMessage());
         } catch (IOException e) {
             System.out.println(e.getMessage());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
     }

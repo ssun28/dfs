@@ -36,8 +36,15 @@ public class CoorMetaData {
         return this.routingTable.size();
     }
 
-    public synchronized void addNodeToRoutingTable(int nodeId, StorageNodeHashSpace snhs) {
-        this.routingTable.put(nodeId, snhs);
+    public synchronized void addNodeToRoutingTable(int newNodeNum, int nodeId, StorageNodeHashSpace snhs) {
+        for(Map.Entry<Integer, StorageNodeHashSpace> sn : routingTable.entrySet()) {
+            int newBegin = (int)(sn.getValue().getSpaceRange()[0] * (1 - 1.0/newNodeNum));
+            int newEnd = (int)(sn.getValue().getSpaceRange()[1] * (1 - 1.0/newNodeNum));
+            int[] newSpaceRange = new int[]{newBegin, newEnd};
+            StorageNodeHashSpace newsnhs = new StorageNodeHashSpace(sn.getValue().getNodeIp(), newSpaceRange);
+            routingTable.put(sn.getKey(), newsnhs);
+        }
+        routingTable.put(nodeId, snhs);
     }
 
     public synchronized Map<Integer, StorageMessages.StorageNodeHashSpace> constructSnHashSpaceProto() {
