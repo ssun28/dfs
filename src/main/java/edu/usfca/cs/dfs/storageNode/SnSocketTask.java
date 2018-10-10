@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -14,10 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Hashtable;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,6 +25,7 @@ public class SnSocketTask implements Runnable{
     public static final String COORDINATOR = "coordinator";
     public static final String CLIENT = "client";
     public static final String DIR = "./bigdata/ssun28/";
+    private static final int CHUNKSIZE = 8000000;
     private static final int PORT = 37000;
 
     private Socket socket;
@@ -128,20 +127,12 @@ public class SnSocketTask implements Runnable{
             byte[] bytes = mDigest.digest(fileNameWithType.getBytes());
             int hash16bits = bytesToInt(bytes);
 
-            ///////////
-            /////
             ArrayList<Integer> nodeIdList = stMetaData.getNodeIdList();
             Collections.sort(nodeIdList);
             int nodesNum = nodeIdList.size();
             int result = hash16bits / ((int)Math.pow(2, 16) / nodesNum);
 
-            int[] nodeIdArray = new int[nodesNum];
-            for(int i = 0; i < nodeIdArray.length; i++) {
-                nodeIdArray[i] = nodeIdList.get(i);
-            }
-
-            int nodeId = nodeIdArray[result];
-//            int nodeId = nodeIdList.get(result);
+            int nodeId = nodeIdList.get(result);
             String positionNodeIp = stMetaData.getPositionNodeIp(nodeId);
 
             StorageMessages.ReturnPosition returnPositionMsg
@@ -194,15 +185,19 @@ public class SnSocketTask implements Runnable{
         int chunkId = storeChunkMsg.getChunkId();
         String fileType = storeChunkMsg.getFileType();
         int numChunks = storeChunkMsg.getNumChunks();
+        int chunkSize = storeChunkMsg.getChunkSize();
+
+        stMetaData.updateNumOfChunks(fileName, fileType, numChunks);
 
         byte[] b = storeChunkMsg.getData().toByteArray();
-        File file = new File(DIR + fileName + "_" + chunkId);
+        File file = new File(DIR + fileName + "_" + chunkId + fileType);
 
         try(FileOutputStream fo = new FileOutputStream(file)) {
             fo.write(b);
 
-            Chunk chunk = new Chunk(fileName, chunkId, fileType, b, numChunks);
+            Chunk chunk = new Chunk(fileName, chunkId, fileType, numChunks, chunkSize);
             stMetaData.addChunkToChunksList(chunk);
+
             String inputFileChunk = fileName+ "_" + chunkId + fileType;
             int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
             stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
@@ -244,10 +239,9 @@ public class SnSocketTask implements Runnable{
                                     copyChunkSocket.getInputStream());
 
                     String response = protoWrapperIn.getResponse();
-                        if (response.equals("success") && nodeIdSetSuccess.size() < 2) {
-                            nodeIdSetSuccess.add(nodeIdArray[i]);
-                            continue;
-                        }
+                    if (response.equals("success") && nodeIdSetSuccess.size() < 2) {
+                        nodeIdSetSuccess.add(nodeIdArray[i]);
+                    }
                 }
             }
             updateOthersAllFilesPosTable(inputFileChunk, nodeId);
@@ -285,13 +279,25 @@ public class SnSocketTask implements Runnable{
         String fileType = "";
         String fileNameWithType = retrieveFileMsgIn.getAskChunksPos();
 
+
         if(fileNameWithType.contains(".")) {
             fileName = fileNameWithType.split("\\.")[0];
             fileType = "." + fileNameWithType.split("\\.")[1];
         }else {
             fileName = fileNameWithType;
         }
-        Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = stMetaData.getRetrieveChunksPos(fileName, fileType);
+
+
+        int numOfChunks = stMetaData.getNumOfChunksTable().get(fileNameWithType);
+        Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = new Hashtable<>();
+        for(int i = 0; i < numOfChunks; i++){
+            String chunkName = fileName+"_"+i+fileType;
+            StorageMessages.NodeIdList list = stMetaData.getRetrieveChunksPos(chunkName);
+            retrieveChunksPosTable.put(chunkName, list);
+        }
+
+
+//        Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = stMetaData.getRetrieveChunksPos(fileName, fileType);
         Hashtable<Integer, String> nodeIpTable = stMetaData.getNodeIpTable();
 
         try {
@@ -323,7 +329,7 @@ public class SnSocketTask implements Runnable{
      * Give a chunk info and give back that chunk data to the client
      * @param retrieveFileMsgIn
      */
-    private void retrieveChunk(StorageMessages.RetrieveFile retrieveFileMsgIn) {
+    private synchronized void retrieveChunk(StorageMessages.RetrieveFile retrieveFileMsgIn) {
         StorageMessages.StoreChunk retreiveChunkMsgIn = retrieveFileMsgIn.getRetrieveChunk();
         String fileName = retreiveChunkMsgIn.getFileName();
         int chunkId = retreiveChunkMsgIn.getChunkId();
@@ -333,7 +339,8 @@ public class SnSocketTask implements Runnable{
 
         StorageMessages.RetrieveFile retrieveFileMsgOut;
         if(chunk != null) {
-            ByteString data = ByteString.copyFrom(chunk.getData());
+            byte[] bytes= readFromDisk(fileName, chunkId, fileType, chunk.getSize());
+            ByteString data = ByteString.copyFrom(bytes);
             StorageMessages.StoreChunk retrieveChunkMsgOut
                     = StorageMessages.StoreChunk.newBuilder()
                     .setFileName(fileName)
@@ -368,7 +375,21 @@ public class SnSocketTask implements Runnable{
         }
     }
 
-    /**
+    private byte[] readFromDisk(String fileName, int chunkId, String fileType, int chunkSize) {
+        String inputFile = fileName+"_"+chunkId+fileType;
+        File f = new File(DIR + inputFile);
+        byte[] data = new byte[chunkSize];
+        try (FileInputStream fs = new FileInputStream(f)){
+            fs.read(data);
+            return data;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+        /**
      * Get nodeFiles list from chunks list
      */
     private void nodeFilesList() {
@@ -439,15 +460,19 @@ public class SnSocketTask implements Runnable{
         int chunkId = storeChunkMsg.getChunkId();
         String fileType = storeChunkMsg.getFileType();
         int numChunks = storeChunkMsg.getNumChunks();
+        int chunkSize = storeChunkMsg.getChunkSize();
+
+        stMetaData.updateNumOfChunks(fileName, fileType, numChunks);
 
         byte[] b = storeChunkMsg.getData().toByteArray();
-        File file = new File(DIR + fileName + "_" + chunkId);
+        File file = new File(DIR + fileName + "_" + chunkId + fileType);
 
         try (FileOutputStream fo = new FileOutputStream(file)) {
             fo.write(b);
 
-            Chunk chunk = new Chunk(fileName, chunkId, fileType, b, numChunks);
+            Chunk chunk = new Chunk(fileName, chunkId, fileType, numChunks, chunkSize);
             stMetaData.addChunkToChunksList(chunk);
+
             String inputFileChunk = fileName+ "_" + chunkId + fileType;
             int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
             stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);

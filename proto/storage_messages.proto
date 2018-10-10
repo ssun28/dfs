@@ -7,6 +7,7 @@ message StoreChunk {
     string fileType = 3;
     bytes data = 4;
     int32 numChunks = 5;
+    int32 chunkSize = 6;
 }
 
 message AskInfo {

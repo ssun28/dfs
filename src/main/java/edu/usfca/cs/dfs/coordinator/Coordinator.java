@@ -11,7 +11,6 @@ import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Hashtable;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -47,7 +46,6 @@ public class Coordinator {
 
     public void start() {
         try {
-//            InputStream dataIn;
             while(isStarted) {
                 Socket socket = serverSocket.accept();
 //                System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");

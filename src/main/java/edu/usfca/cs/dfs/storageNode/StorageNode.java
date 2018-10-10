@@ -14,6 +14,7 @@ import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,8 +30,9 @@ public class StorageNode {
     private StMetaData stMetaData;
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<String, ArrayList<Integer>> allFilesPosTable;
+    private Hashtable<String, Integer> numOfChunksTable;
     private StorageNodeInfo storageNodeInfo;
-    private ArrayList<Chunk> chunksList;
+    private HashSet<Chunk> chunksList;
     private int requestsNum;
 
 
@@ -38,9 +40,10 @@ public class StorageNode {
         String snIp = getIpAddress();
         this.routingTable = new Hashtable<>();
         this.allFilesPosTable = new Hashtable<>();
+        this.numOfChunksTable = new Hashtable<>();
         this.storageNodeInfo = new StorageNodeInfo(-1,snIp, false, 0.0, 0);
-        this.chunksList = new ArrayList<>();
-        this.stMetaData = new StMetaData(routingTable, allFilesPosTable, storageNodeInfo, chunksList);
+        this.chunksList = new HashSet<>();
+        this.stMetaData = new StMetaData(routingTable, allFilesPosTable, numOfChunksTable, storageNodeInfo, chunksList);
         this.requestsNum = 0;
 //        if(!createDirectory()){
 //            System.out.println("Creating Directory failed!!");

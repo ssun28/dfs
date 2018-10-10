@@ -5,15 +5,15 @@ public class Chunk {
     private String fileName;
     private int chunkId;
     private String fileType;
-    private byte[] data;
     private int numChunks;
+    private int size;
 
-    public Chunk(String fileName, int chunkId, String fileType, byte[] data, int numChunks) {
+    public Chunk(String fileName, int chunkId, String fileType, int numChunks, int size) {
         this.fileName = fileName;
         this.chunkId = chunkId;
         this.fileType = fileType;
-        this.data = data;
         this.numChunks = numChunks;
+        this.size = size;
     }
 
     public String getFileName() {
@@ -40,19 +40,19 @@ public class Chunk {
         this.fileType = fileType;
     }
 
-    public byte[] getData() {
-        return data;
-    }
-
-    public void setData(byte[] data) {
-        this.data = data;
-    }
-
     public int getNumChunks() {
         return numChunks;
     }
 
     public void setNumChunks(int numChunks) {
         this.numChunks = numChunks;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 }

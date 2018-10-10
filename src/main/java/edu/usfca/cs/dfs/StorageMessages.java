@@ -52,6 +52,11 @@ public final class StorageMessages {
      * <code>int32 numChunks = 5;</code>
      */
     int getNumChunks();
+
+    /**
+     * <code>int32 chunkSize = 6;</code>
+     */
+    int getChunkSize();
   }
   /**
    * Protobuf type {@code StoreChunk}
@@ -71,6 +76,7 @@ public final class StorageMessages {
       fileType_ = "";
       data_ = com.google.protobuf.ByteString.EMPTY;
       numChunks_ = 0;
+      chunkSize_ = 0;
     }
 
     @java.lang.Override
@@ -122,6 +128,11 @@ public final class StorageMessages {
             case 40: {
 
               numChunks_ = input.readInt32();
+              break;
+            }
+            case 48: {
+
+              chunkSize_ = input.readInt32();
               break;
             }
             default: {
@@ -251,6 +262,15 @@ public final class StorageMessages {
       return numChunks_;
     }
 
+    public static final int CHUNKSIZE_FIELD_NUMBER = 6;
+    private int chunkSize_;
+    /**
+     * <code>int32 chunkSize = 6;</code>
+     */
+    public int getChunkSize() {
+      return chunkSize_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -280,6 +300,9 @@ public final class StorageMessages {
       if (numChunks_ != 0) {
         output.writeInt32(5, numChunks_);
       }
+      if (chunkSize_ != 0) {
+        output.writeInt32(6, chunkSize_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -307,6 +330,10 @@ public final class StorageMessages {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(5, numChunks_);
       }
+      if (chunkSize_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(6, chunkSize_);
+      }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
@@ -333,6 +360,8 @@ public final class StorageMessages {
           .equals(other.getData());
       result = result && (getNumChunks()
           == other.getNumChunks());
+      result = result && (getChunkSize()
+          == other.getChunkSize());
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -354,6 +383,8 @@ public final class StorageMessages {
       hash = (53 * hash) + getData().hashCode();
       hash = (37 * hash) + NUMCHUNKS_FIELD_NUMBER;
       hash = (53 * hash) + getNumChunks();
+      hash = (37 * hash) + CHUNKSIZE_FIELD_NUMBER;
+      hash = (53 * hash) + getChunkSize();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -497,6 +528,8 @@ public final class StorageMessages {
 
         numChunks_ = 0;
 
+        chunkSize_ = 0;
+
         return this;
       }
 
@@ -528,6 +561,7 @@ public final class StorageMessages {
         result.fileType_ = fileType_;
         result.data_ = data_;
         result.numChunks_ = numChunks_;
+        result.chunkSize_ = chunkSize_;
         onBuilt();
         return result;
       }
@@ -592,6 +626,9 @@ public final class StorageMessages {
         }
         if (other.getNumChunks() != 0) {
           setNumChunks(other.getNumChunks());
+        }
+        if (other.getChunkSize() != 0) {
+          setChunkSize(other.getChunkSize());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -837,6 +874,32 @@ public final class StorageMessages {
       public Builder clearNumChunks() {
         
         numChunks_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private int chunkSize_ ;
+      /**
+       * <code>int32 chunkSize = 6;</code>
+       */
+      public int getChunkSize() {
+        return chunkSize_;
+      }
+      /**
+       * <code>int32 chunkSize = 6;</code>
+       */
+      public Builder setChunkSize(int value) {
+        
+        chunkSize_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 chunkSize = 6;</code>
+       */
+      public Builder clearChunkSize() {
+        
+        chunkSize_ = 0;
         onChanged();
         return this;
       }
@@ -17756,62 +17819,63 @@ public final class StorageMessages {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\026storage_messages.proto\"b\n\nStoreChunk\022\020" +
+      "\n\026storage_messages.proto\"u\n\nStoreChunk\022\020" +
       "\n\010fileName\030\001 \001(\t\022\017\n\007chunkId\030\002 \001(\005\022\020\n\010fil" +
       "eType\030\003 \001(\t\022\014\n\004data\030\004 \001(\014\022\021\n\tnumChunks\030\005" +
-      " \001(\005\"\254\002\n\007AskInfo\022\031\n\017activeNodesList\030\001 \001(" +
-      "\010H\000\022.\n\022resActiveNodesList\030\002 \001(\0132\020.Active" +
-      "NodesListH\000\022\030\n\016totalDiskSpace\030\003 \001(\010H\000\022,\n" +
-      "\021resTotalDiskSpace\030\004 \001(\0132\017.TotalDiskSpac" +
-      "eH\000\022\025\n\013requestsNum\030\005 \001(\010H\000\022&\n\016resRequest" +
-      "sNum\030\006 \001(\0132\014.RequestsNumH\000\022\027\n\rnodeFilesL" +
-      "ist\030\007 \001(\010H\000\022*\n\020resNodeFilesList\030\010 \001(\0132\016." +
-      "NodeFilesListH\000B\n\n\010function\"2\n\017ActiveNod" +
-      "esList\022\037\n\nactiveNode\030\001 \003(\0132\013.ActiveNode\"" +
-      ",\n\nActiveNode\022\016\n\006nodeId\030\001 \001(\005\022\016\n\006nodeIp\030" +
-      "\002 \001(\t\"/\n\016TotalDiskSpace\022\035\n\tdiskSpace\030\001 \003" +
-      "(\0132\n.DiskSpace\":\n\tDiskSpace\022\016\n\006nodeId\030\001 " +
-      "\001(\005\022\016\n\006nodeIp\030\002 \001(\t\022\r\n\005space\030\003 \001(\001\"8\n\013Re" +
-      "questsNum\022)\n\017nodeRequestsNum\030\001 \003(\0132\020.Nod" +
-      "eRequestsNum\"F\n\017NodeRequestsNum\022\016\n\006nodeI" +
-      "d\030\001 \001(\005\022\016\n\006nodeIp\030\002 \001(\t\022\023\n\013requestsNum\030\003" +
-      " \001(\005\"^\n\017StorageNodeInfo\022\016\n\006nodeId\030\001 \001(\005\022" +
-      "\016\n\006active\030\002 \001(\010\022\026\n\016spaceAvailable\030\003 \001(\001\022" +
-      "\023\n\013requestsNum\030\004 \001(\005\"\306\001\n\tHeartbeat\022\021\n\trt" +
-      "Version\030\001 \001(\001\022)\n\017storageNodeInfo\030\002 \001(\0132\020" +
-      ".StorageNodeInfo\0220\n\013routingEles\030\003 \003(\0132\033." +
-      "Heartbeat.RoutingElesEntry\032I\n\020RoutingEle" +
-      "sEntry\022\013\n\003key\030\001 \001(\005\022$\n\005value\030\002 \001(\0132\025.Sto" +
-      "rageNodeHashSpace:\0028\001\"Q\n\nRoutingEle\022\016\n\006n" +
-      "odeId\030\001 \001(\005\0223\n\024storageNodeHashSpace\030\002 \001(" +
-      "\0132\025.StorageNodeHashSpace\"L\n\024StorageNodeH" +
-      "ashSpace\022\016\n\006nodeIp\030\001 \001(\t\022\022\n\nspaceBegin\030\002" +
-      " \001(\005\022\020\n\010spaceEnd\030\003 \001(\005\"0\n\rNodeFilesList\022" +
-      "\037\n\nstoreChunk\030\001 \003(\0132\013.StoreChunk\"7\n\016Retu" +
-      "rnPosition\022\016\n\006nodeId\030\001 \001(\005\022\025\n\rtoStoreNod" +
-      "eIp\030\002 \001(\t\"=\n\023UpdateAllFilesTable\022\026\n\016inpu" +
-      "tFileChunk\030\001 \001(\t\022\016\n\006nodeId\030\002 \001(\005\"\347\001\n\014Res" +
-      "ChunksPos\022/\n\tChunksPos\030\001 \003(\0132\034.ResChunks" +
-      "Pos.ChunksPosEntry\0223\n\013NodeIpTable\030\002 \003(\0132" +
-      "\036.ResChunksPos.NodeIpTableEntry\032=\n\016Chunk" +
-      "sPosEntry\022\013\n\003key\030\001 \001(\t\022\032\n\005value\030\002 \001(\0132\013." +
-      "NodeIdList:\0028\001\0322\n\020NodeIpTableEntry\022\013\n\003ke" +
-      "y\030\001 \001(\005\022\r\n\005value\030\002 \001(\t:\0028\001\"\034\n\nNodeIdList" +
-      "\022\016\n\006nodeId\030\001 \003(\005\"\227\001\n\014RetrieveFile\022\026\n\016res" +
-      "ChunkStatus\030\001 \001(\t\022\026\n\014askChunksPos\030\002 \001(\tH" +
-      "\000\022%\n\014resChunksPos\030\003 \001(\0132\r.ResChunksPosH\000" +
-      "\022$\n\rretrieveChunk\030\004 \001(\0132\013.StoreChunkH\000B\n" +
-      "\n\010function\"\206\003\n\014ProtoWrapper\022\021\n\trequestor" +
-      "\030\001 \001(\t\022\n\n\002ip\030\002 \001(\t\022\021\n\ttimeStamp\030\r \001(\t\022\020\n" +
-      "\010response\030\016 \001(\t\022\021\n\007addNode\030\003 \001(\tH\000\022\024\n\nre" +
-      "moveNode\030\004 \001(\tH\000\022\025\n\013askPosition\030\005 \001(\tH\000\022" +
-      ")\n\016returnPosition\030\006 \001(\0132\017.ReturnPosition" +
-      "H\000\022\033\n\007askInfo\030\007 \001(\0132\010.AskInfoH\000\022\037\n\theart" +
-      "beat\030\010 \001(\0132\n.HeartbeatH\000\022!\n\nstoreChunk\030\t" +
-      " \001(\0132\013.StoreChunkH\000\022%\n\014retrieveFile\030\n \001(" +
-      "\0132\r.RetrieveFileH\000\0223\n\023updateAllFilesTabl" +
-      "e\030\014 \001(\0132\024.UpdateAllFilesTableH\000B\n\n\010funct" +
-      "ionB\022\n\020edu.usfca.cs.dfsb\006proto3"
+      " \001(\005\022\021\n\tchunkSize\030\006 \001(\005\"\254\002\n\007AskInfo\022\031\n\017a" +
+      "ctiveNodesList\030\001 \001(\010H\000\022.\n\022resActiveNodes" +
+      "List\030\002 \001(\0132\020.ActiveNodesListH\000\022\030\n\016totalD" +
+      "iskSpace\030\003 \001(\010H\000\022,\n\021resTotalDiskSpace\030\004 " +
+      "\001(\0132\017.TotalDiskSpaceH\000\022\025\n\013requestsNum\030\005 " +
+      "\001(\010H\000\022&\n\016resRequestsNum\030\006 \001(\0132\014.Requests" +
+      "NumH\000\022\027\n\rnodeFilesList\030\007 \001(\010H\000\022*\n\020resNod" +
+      "eFilesList\030\010 \001(\0132\016.NodeFilesListH\000B\n\n\010fu" +
+      "nction\"2\n\017ActiveNodesList\022\037\n\nactiveNode\030" +
+      "\001 \003(\0132\013.ActiveNode\",\n\nActiveNode\022\016\n\006node" +
+      "Id\030\001 \001(\005\022\016\n\006nodeIp\030\002 \001(\t\"/\n\016TotalDiskSpa" +
+      "ce\022\035\n\tdiskSpace\030\001 \003(\0132\n.DiskSpace\":\n\tDis" +
+      "kSpace\022\016\n\006nodeId\030\001 \001(\005\022\016\n\006nodeIp\030\002 \001(\t\022\r" +
+      "\n\005space\030\003 \001(\001\"8\n\013RequestsNum\022)\n\017nodeRequ" +
+      "estsNum\030\001 \003(\0132\020.NodeRequestsNum\"F\n\017NodeR" +
+      "equestsNum\022\016\n\006nodeId\030\001 \001(\005\022\016\n\006nodeIp\030\002 \001" +
+      "(\t\022\023\n\013requestsNum\030\003 \001(\005\"^\n\017StorageNodeIn" +
+      "fo\022\016\n\006nodeId\030\001 \001(\005\022\016\n\006active\030\002 \001(\010\022\026\n\016sp" +
+      "aceAvailable\030\003 \001(\001\022\023\n\013requestsNum\030\004 \001(\005\"" +
+      "\306\001\n\tHeartbeat\022\021\n\trtVersion\030\001 \001(\001\022)\n\017stor" +
+      "ageNodeInfo\030\002 \001(\0132\020.StorageNodeInfo\0220\n\013r" +
+      "outingEles\030\003 \003(\0132\033.Heartbeat.RoutingEles" +
+      "Entry\032I\n\020RoutingElesEntry\022\013\n\003key\030\001 \001(\005\022$" +
+      "\n\005value\030\002 \001(\0132\025.StorageNodeHashSpace:\0028\001" +
+      "\"Q\n\nRoutingEle\022\016\n\006nodeId\030\001 \001(\005\0223\n\024storag" +
+      "eNodeHashSpace\030\002 \001(\0132\025.StorageNodeHashSp" +
+      "ace\"L\n\024StorageNodeHashSpace\022\016\n\006nodeIp\030\001 " +
+      "\001(\t\022\022\n\nspaceBegin\030\002 \001(\005\022\020\n\010spaceEnd\030\003 \001(" +
+      "\005\"0\n\rNodeFilesList\022\037\n\nstoreChunk\030\001 \003(\0132\013" +
+      ".StoreChunk\"7\n\016ReturnPosition\022\016\n\006nodeId\030" +
+      "\001 \001(\005\022\025\n\rtoStoreNodeIp\030\002 \001(\t\"=\n\023UpdateAl" +
+      "lFilesTable\022\026\n\016inputFileChunk\030\001 \001(\t\022\016\n\006n" +
+      "odeId\030\002 \001(\005\"\347\001\n\014ResChunksPos\022/\n\tChunksPo" +
+      "s\030\001 \003(\0132\034.ResChunksPos.ChunksPosEntry\0223\n" +
+      "\013NodeIpTable\030\002 \003(\0132\036.ResChunksPos.NodeIp" +
+      "TableEntry\032=\n\016ChunksPosEntry\022\013\n\003key\030\001 \001(" +
+      "\t\022\032\n\005value\030\002 \001(\0132\013.NodeIdList:\0028\001\0322\n\020Nod" +
+      "eIpTableEntry\022\013\n\003key\030\001 \001(\005\022\r\n\005value\030\002 \001(" +
+      "\t:\0028\001\"\034\n\nNodeIdList\022\016\n\006nodeId\030\001 \003(\005\"\227\001\n\014" +
+      "RetrieveFile\022\026\n\016resChunkStatus\030\001 \001(\t\022\026\n\014" +
+      "askChunksPos\030\002 \001(\tH\000\022%\n\014resChunksPos\030\003 \001" +
+      "(\0132\r.ResChunksPosH\000\022$\n\rretrieveChunk\030\004 \001" +
+      "(\0132\013.StoreChunkH\000B\n\n\010function\"\206\003\n\014ProtoW" +
+      "rapper\022\021\n\trequestor\030\001 \001(\t\022\n\n\002ip\030\002 \001(\t\022\021\n" +
+      "\ttimeStamp\030\r \001(\t\022\020\n\010response\030\016 \001(\t\022\021\n\007ad" +
+      "dNode\030\003 \001(\tH\000\022\024\n\nremoveNode\030\004 \001(\tH\000\022\025\n\013a" +
+      "skPosition\030\005 \001(\tH\000\022)\n\016returnPosition\030\006 \001" +
+      "(\0132\017.ReturnPositionH\000\022\033\n\007askInfo\030\007 \001(\0132\010" +
+      ".AskInfoH\000\022\037\n\theartbeat\030\010 \001(\0132\n.Heartbea" +
+      "tH\000\022!\n\nstoreChunk\030\t \001(\0132\013.StoreChunkH\000\022%" +
+      "\n\014retrieveFile\030\n \001(\0132\r.RetrieveFileH\000\0223\n" +
+      "\023updateAllFilesTable\030\014 \001(\0132\024.UpdateAllFi" +
+      "lesTableH\000B\n\n\010functionB\022\n\020edu.usfca.cs.d" +
+      "fsb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -17830,7 +17894,7 @@ public final class StorageMessages {
     internal_static_StoreChunk_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_StoreChunk_descriptor,
-        new java.lang.String[] { "FileName", "ChunkId", "FileType", "Data", "NumChunks", });
+        new java.lang.String[] { "FileName", "ChunkId", "FileType", "Data", "NumChunks", "ChunkSize", });
     internal_static_AskInfo_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_AskInfo_fieldAccessorTable = new

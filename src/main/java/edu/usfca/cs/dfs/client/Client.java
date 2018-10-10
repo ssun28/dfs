@@ -322,7 +322,7 @@ public class Client {
                 System.out.println("size = " + size +"_"+"byte[] size:" + b.length);
                 ByteString data = ByteString.copyFrom(b, 0, size);
 
-                StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, data);
+                StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, data, size);
                 executorService.execute(storeChunkTask);
 
 
@@ -477,23 +477,6 @@ public class Client {
 //        client.start();
 
 
-        ArrayList<Integer> nodeIdList = new ArrayList<>();
-        nodeIdList.add(0);
-        nodeIdList.add(1);
-        nodeIdList.add(3);
-        nodeIdList.add(5);
-        Collections.sort(nodeIdList);
-        int nodesNum = nodeIdList.size();
-        int test = (int)Math.pow(2, 14) - 1;
-        int result =  test/ ((int)Math.pow(2, 16) / nodesNum);
-
-        int[] nodeIdArray = new int[nodeIdList.size()];
-        for(int i = 0; i < nodeIdArray.length; i++) {
-            nodeIdArray[i] = nodeIdList.get(i);
-        }
-
-        int nodeId = nodeIdArray[result];
-        System.out.println("nodeId = " + nodeId);
     }
 
 }

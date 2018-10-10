@@ -44,18 +44,25 @@ public class CoorMetaData {
      * When a new storage node add to the hash ring, change the other nodes' hash space
      * in the routing table and add the new node into routing table as well
      * @param newNodeNum
-     * @param nodeId
+     * @param newNodeId
      * @param snhs
      */
-    public synchronized void addNodeToRoutingTable(int newNodeNum, int nodeId, StorageNodeHashSpace snhs) {
+    public synchronized void addNodeToRoutingTable(int newNodeNum, int newNodeId, StorageNodeHashSpace snhs) {
         for(Map.Entry<Integer, StorageNodeHashSpace> sn : routingTable.entrySet()) {
+            int nodeId = sn.getKey();
+            StorageNodeHashSpace hashSpace = sn.getValue();
+
             int newBegin = (int)(sn.getValue().getSpaceRange()[0] * (1 - 1.0/newNodeNum));
             int newEnd = (int)(sn.getValue().getSpaceRange()[1] * (1 - 1.0/newNodeNum));
             int[] newSpaceRange = new int[]{newBegin, newEnd};
-            StorageNodeHashSpace newsnhs = new StorageNodeHashSpace(sn.getValue().getNodeIp(), newSpaceRange);
-            routingTable.put(sn.getKey(), newsnhs);
+
+            hashSpace.setSpaceRange(newSpaceRange);
+            routingTable.put(nodeId, hashSpace);
+//            StorageNodeHashSpace newsnhs = new StorageNodeHashSpace(sn.getValue().getNodeIp(), newSpaceRange);
+//            routingTable.put(sn.getKey(), sn.setValue())
+//            routingTable.put(sn.getKey(), newsnhs);
         }
-        routingTable.put(nodeId, snhs);
+        routingTable.put(newNodeId, snhs);
     }
 
     /**

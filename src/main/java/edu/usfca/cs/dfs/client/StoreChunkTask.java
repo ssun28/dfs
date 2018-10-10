@@ -16,11 +16,13 @@ public class StoreChunkTask implements Runnable {
     private int chunkId;
     private ByteString data;
     private String positionNodeIp;
+    private int chunkSize;
 
-    public StoreChunkTask(ClientMetaData clientMetaData, int chunkId, ByteString data) {
+    public StoreChunkTask(ClientMetaData clientMetaData, int chunkId, ByteString data, int chunkSize) {
         this.clientMetaData = clientMetaData;
         this.chunkId = chunkId;
         this.data = data;
+        this.chunkSize = chunkSize;
     }
 
     public void run() {
@@ -77,6 +79,7 @@ public class StoreChunkTask implements Runnable {
                 .setChunkId(chunkId)
                 .setData(data)
                 .setNumChunks(clientMetaData.getNumChunks())
+                .setChunkSize(chunkSize)
                 .build();
 
             StorageMessages.ProtoWrapper protoWrapper =

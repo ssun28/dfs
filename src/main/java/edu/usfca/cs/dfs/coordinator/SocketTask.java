@@ -175,17 +175,17 @@ public class SocketTask implements Runnable {
      * update the routing table, rtVersion in coordinator
      */
     private void addNodeRequest() {
-        int currentNodeId = coorMetaData.getNodeId() + 1;
-        int newNodeNum = coorMetaData.getRoutingTableSize() + 1;
-        int range = HASHRING_PIECES / newNodeNum;
-        int rangeBegin = (newNodeNum - 1) * range;
+        int newNodeId = coorMetaData.getNodeId() + 1;
+        int totalNodeNum = coorMetaData.getRoutingTableSize() + 1;
+        int range = HASHRING_PIECES / totalNodeNum;
+        int rangeBegin = (totalNodeNum - 1) * range;
         int[] spaceRange = new int[]{rangeBegin, (int)Math.pow(2, 16) - 1};
 
         StorageNodeHashSpace snhs = new StorageNodeHashSpace(protoWrapperIn.getIp(), spaceRange);
 
-        coorMetaData.addNodeToRoutingTable(newNodeNum, currentNodeId, snhs);
+        coorMetaData.addNodeToRoutingTable(totalNodeNum, newNodeId, snhs);
 
-        System.out.println("Node_" + currentNodeId + " is allowed to add into the hash space!");
+        System.out.println("Node_" + newNodeId + " is allowed to add into the hash space!");
 
         System.out.println("Test coordinator begin !!!!!!");
         for(Map.Entry<Integer, StorageNodeHashSpace> e : coorMetaData.getRoutingTable().entrySet()){
@@ -195,13 +195,13 @@ public class SocketTask implements Runnable {
             System.out.println("SpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
         }
 
-        coorMetaData.setNodeId(currentNodeId);
+        coorMetaData.setNodeId(newNodeId);
 
         StorageMessages.ProtoWrapper protoWrapperOut =
                 StorageMessages.ProtoWrapper.newBuilder()
                         .setRequestor("coordinator")
                         .setIp(coorMetaData.getCoorIp())
-                        .setAddNode(Integer.toString(currentNodeId))
+                        .setAddNode(Integer.toString(newNodeId))
                         .build();
         try {
             protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
@@ -233,18 +233,18 @@ public class SocketTask implements Runnable {
                 StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
                 coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
 
-                StorageMessages.Heartbeat heartBeatOutMsg;
+                StorageMessages.Heartbeat heartBeatMsgOut;
                 StorageMessages.ProtoWrapper protoWrapperOut;
 
                 if (rtVersion >= coorMetaData.getRtVersion()) {
-                    heartBeatOutMsg
+                    heartBeatMsgOut
                             = StorageMessages.Heartbeat.newBuilder()
                             .setRtVersion(coorMetaData.getRtVersion())
                             .build();
                 } else {
                     Map<Integer, StorageMessages.StorageNodeHashSpace> mp = coorMetaData.constructSnHashSpaceProto();
 
-                    heartBeatOutMsg
+                    heartBeatMsgOut
                             = StorageMessages.Heartbeat.newBuilder()
                             .setRtVersion(coorMetaData.getRtVersion())
                             .putAllRoutingEles(mp)
@@ -255,7 +255,7 @@ public class SocketTask implements Runnable {
                         = StorageMessages.ProtoWrapper.newBuilder()
                         .setRequestor("coordinator")
                         .setIp(coorMetaData.getCoorIp())
-                        .setHeartbeat(heartBeatOutMsg)
+                        .setHeartbeat(heartBeatMsgOut)
                         .build();
 
 

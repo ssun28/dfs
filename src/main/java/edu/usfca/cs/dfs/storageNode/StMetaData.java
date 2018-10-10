@@ -3,10 +3,7 @@ package edu.usfca.cs.dfs.storageNode;
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.*;
 
 public class StMetaData {
 
@@ -16,13 +13,19 @@ public class StMetaData {
      */
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<String, ArrayList<Integer>> allFilesPosTable;
+    private Hashtable<String, Integer> numOfChunksTable;
     private StorageNodeInfo storageNodeInfo;
-    private ArrayList<Chunk> chunksList;
+//    private ArrayList<Chunk> chunksList;
+    private HashSet<Chunk> chunksList;
 
-    public StMetaData(Hashtable<Integer, StorageNodeHashSpace> routingTable, Hashtable<String,
-            ArrayList<Integer>> allFilesPosTable, StorageNodeInfo storageNodeInfo, ArrayList<Chunk> chunksList) {
+    public StMetaData(Hashtable<Integer, StorageNodeHashSpace> routingTable,
+                      Hashtable<String, ArrayList<Integer>> allFilesPosTable,
+                      Hashtable<String, Integer> numOfChunksTable,
+                      StorageNodeInfo storageNodeInfo,
+                      HashSet<Chunk> chunksList) {
         this.routingTable = routingTable;
         this.allFilesPosTable = allFilesPosTable;
+        this.numOfChunksTable = numOfChunksTable;
         this.storageNodeInfo = storageNodeInfo;
         this.chunksList = chunksList;
     }
@@ -86,13 +89,20 @@ public class StMetaData {
 
         for(int i = 0; i < nodeIdList.size(); i++) {
             if(firstChunkNodeId == nodeIdList.get(i)) {
-                nodeIdArray[0] = (i + 1) % nodeIdList.size();
-                nodeIdArray[1] = (i + 2) % nodeIdList.size();
+                nodeIdArray[0] = nodeIdList.get((i + 1) % nodeIdList.size());
+                nodeIdArray[1] = nodeIdList.get((i + 2) % nodeIdList.size());
                 break;
             }
         }
 
         return nodeIdArray;
+    }
+
+
+    public synchronized void updateNumOfChunks(String fileName, String fileType, int numChunks) {
+        if(numOfChunksTable.get(fileName+fileType) > numChunks) {
+            numOfChunksTable.put(fileName+fileType, numChunks);
+        }
     }
 
     public synchronized String getPositionNodeIp(int nodeId) {
@@ -129,33 +139,42 @@ public class StMetaData {
      * When a client give a file name, give back a table contains all the file chunks
      * key: chunkname
      * value : nodeId list
-     * @param fileName
-     * @param fileType
+     * @param chunkName
      * @return
      */
-    public synchronized Hashtable<String, StorageMessages.NodeIdList> getRetrieveChunksPos(String fileName, String fileType) {
-        Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = new Hashtable<>();
-        for(String s : allFilesPosTable.keySet()) {
-            String sfileName;
-            String sfileType = "";
-            if(s.contains(".")) {
-                sfileName = s.split("\\.")[0];
-                sfileType = "." + s.split("\\.")[1];
-            }else {
-                sfileName = s;
-            }
+    public synchronized StorageMessages.NodeIdList getRetrieveChunksPos(String chunkName) {
 
-            int index = sfileName.lastIndexOf("_");
-            String fileNamePre = sfileName.substring(0, index);
-            if(fileName.equals(fileNamePre) && sfileType.equals(fileType)) {
-                StorageMessages.NodeIdList nodeIdListMsg
-                        = StorageMessages.NodeIdList.newBuilder()
-                        .addAllNodeId(allFilesPosTable.get(s))
-                        .build();
-                retrieveChunksPosTable.put(s, nodeIdListMsg);
-            }
+        StorageMessages.NodeIdList nodeIdListMsg = null;
+        if(allFilesPosTable.containsKey(chunkName)){
+            nodeIdListMsg = StorageMessages.NodeIdList.newBuilder()
+                    .addAllNodeId(allFilesPosTable.get(chunkName))
+                    .build();
+//            retrieveChunksPosTable.put(key, nodeIdListMsg);
         }
-        return retrieveChunksPosTable;
+        return nodeIdListMsg;
+//        return retrieveChunksPosTable;
+
+//        for(String s : allFilesPosTable.keySet()) {
+//            String sfileName;
+//            String sfileType = "";
+//            if(s.contains(".")) {
+//                sfileName = s.split("\\.")[0];
+//                sfileType = "." + s.split("\\.")[1];
+//            }else {
+//                sfileName = s;
+//            }
+//
+//            int index = sfileName.lastIndexOf("_");
+//            String fileNamePre = sfileName.substring(0, index);
+//            if(fileName.equals(fileNamePre) && sfileType.equals(fileType)) {
+//                StorageMessages.NodeIdList nodeIdListMsg
+//                        = StorageMessages.NodeIdList.newBuilder()
+//                        .addAllNodeId(allFilesPosTable.get(s))
+//                        .build();
+//                retrieveChunksPosTable.put(s, nodeIdListMsg);
+//            }
+//        }
+//        return retrieveChunksPosTable;
     }
 
     public synchronized Hashtable<Integer, String> getNodeIpTable() {
@@ -179,7 +198,7 @@ public class StMetaData {
         this.storageNodeInfo = storageNodeInfo;
     }
 
-    public synchronized ArrayList<Chunk> getChunksList() {
+    public synchronized HashSet<Chunk> getChunksList() {
         return chunksList;
     }
 
@@ -199,6 +218,7 @@ public class StMetaData {
         return nodeFilesList;
     }
 
+
     public synchronized Chunk getChunk(String fileName, int chunkId, String fileType) {
         for(Chunk c : chunksList) {
             if(fileName.equals(c.getFileName()) && chunkId == c.getChunkId() && fileType.equals(c.getFileType())) {
@@ -208,11 +228,19 @@ public class StMetaData {
         return null;
     }
 
-    public void setChunksList(ArrayList<Chunk> chunksList) {
+    public void setChunksList(HashSet<Chunk> chunksList) {
         this.chunksList = chunksList;
     }
 
     public synchronized void addChunkToChunksList(Chunk chunk) {
         chunksList.add(chunk);
+    }
+
+    public Hashtable<String, Integer> getNumOfChunksTable() {
+        return numOfChunksTable;
+    }
+
+    public void setNumOfChunksTable(Hashtable<String, Integer> numOfChunksTable) {
+        this.numOfChunksTable = numOfChunksTable;
     }
 }
