@@ -10,6 +10,10 @@ import java.util.Map;
 
 public class CoorMetaData {
 
+    /**
+     * routingTable: key: nodeId
+     * metaDataTable: key: nodeId
+     */
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<Integer, StorageNodeInfo> metaDataTable;
     private int nodeId;
@@ -36,6 +40,13 @@ public class CoorMetaData {
         return this.routingTable.size();
     }
 
+    /**
+     * When a new storage node add to the hash ring, change the other nodes' hash space
+     * in the routing table and add the new node into routing table as well
+     * @param newNodeNum
+     * @param nodeId
+     * @param snhs
+     */
     public synchronized void addNodeToRoutingTable(int newNodeNum, int nodeId, StorageNodeHashSpace snhs) {
         for(Map.Entry<Integer, StorageNodeHashSpace> sn : routingTable.entrySet()) {
             int newBegin = (int)(sn.getValue().getSpaceRange()[0] * (1 - 1.0/newNodeNum));
@@ -47,6 +58,10 @@ public class CoorMetaData {
         routingTable.put(nodeId, snhs);
     }
 
+    /**
+     * Construct a storage node hash space protocol
+     * @return
+     */
     public synchronized Map<Integer, StorageMessages.StorageNodeHashSpace> constructSnHashSpaceProto() {
         Map<Integer, StorageMessages.StorageNodeHashSpace> mp = new HashMap<>();
         for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
@@ -73,6 +88,10 @@ public class CoorMetaData {
         this.metaDataTable.put(nodeId, sn);
     }
 
+    /**
+     * Get the activeNodesList from metaDataTable
+     * @return
+     */
     public synchronized ArrayList<StorageMessages.ActiveNode> getActiveNodesList() {
         ArrayList<StorageMessages.ActiveNode> sa = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
@@ -88,6 +107,10 @@ public class CoorMetaData {
         return sa;
     }
 
+    /**
+     * Get the totalDiskSpace from metaDataTable
+     * @return
+     */
     public synchronized ArrayList<StorageMessages.DiskSpace> getTotalDiskSpace() {
         ArrayList<StorageMessages.DiskSpace> sd = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
@@ -102,6 +125,10 @@ public class CoorMetaData {
         return sd;
     }
 
+    /**
+     * Get the nodeRequestsNum list from metaDataTable
+     * @return
+     */
     public synchronized ArrayList<StorageMessages.NodeRequestsNum> getNodeRuquestsNum() {
         ArrayList<StorageMessages.NodeRequestsNum> sr = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {

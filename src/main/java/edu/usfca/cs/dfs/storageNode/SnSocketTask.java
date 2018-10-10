@@ -66,6 +66,10 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * All requests from client
+     * @param functionType
+     */
     private void clientRequest(String functionType) {
         switch(functionType) {
             case "ASKPOSITION":
@@ -111,6 +115,11 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Ask position request from client(with chunk name)
+     * hash the give chunk name and
+     * send back the positioned storage node nodeId and nodeIp
+     */
     private void askPosition() {
         try {
             String fileNameWithType = protoWrapperIn.getAskPosition();
@@ -119,12 +128,20 @@ public class SnSocketTask implements Runnable{
             byte[] bytes = mDigest.digest(fileNameWithType.getBytes());
             int hash16bits = bytesToInt(bytes);
 
+            ///////////
+            /////
             ArrayList<Integer> nodeIdList = stMetaData.getNodeIdList();
             Collections.sort(nodeIdList);
             int nodesNum = nodeIdList.size();
             int result = hash16bits / ((int)Math.pow(2, 16) / nodesNum);
 
-            int nodeId = nodeIdList.get(result);
+            int[] nodeIdArray = new int[nodesNum];
+            for(int i = 0; i < nodeIdArray.length; i++) {
+                nodeIdArray[i] = nodeIdList.get(i);
+            }
+
+            int nodeId = nodeIdArray[result];
+//            int nodeId = nodeIdList.get(result);
             String positionNodeIp = stMetaData.getPositionNodeIp(nodeId);
 
             StorageMessages.ReturnPosition returnPositionMsg
@@ -149,6 +166,11 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Get the 16 bits result from the bytes
+     * @param bytes
+     * @return
+     */
     private int bytesToInt(byte[] bytes) {
         int b0 = bytes[0] & 0xFF;
         int b1 = bytes[1] & 0xFF;
@@ -253,6 +275,11 @@ public class SnSocketTask implements Runnable{
         return true;
     }
 
+    /**
+     * Given a file name to get the nodeIds list store that all file chunks
+     * give the response with nodeId list and nodeIp table
+     * @param retrieveFileMsgIn
+     */
     private void askChunksPos(StorageMessages.RetrieveFile retrieveFileMsgIn) {
         String fileName;
         String fileType = "";
@@ -292,6 +319,10 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Give a chunk info and give back that chunk data to the client
+     * @param retrieveFileMsgIn
+     */
     private void retrieveChunk(StorageMessages.RetrieveFile retrieveFileMsgIn) {
         StorageMessages.StoreChunk retreiveChunkMsgIn = retrieveFileMsgIn.getRetrieveChunk();
         String fileName = retreiveChunkMsgIn.getFileName();
@@ -337,6 +368,9 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Get nodeFiles list from chunks list
+     */
     private void nodeFilesList() {
         try {
             ArrayList<StorageMessages.StoreChunk> nodeFilesList = stMetaData.getNodeFilesList();
@@ -364,6 +398,10 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * All requests from storage node
+     * @param functionType
+     */
     private void storageNodeRequest(String functionType) {
         switch(functionType) {
             case "UPDATEALLFILESTABLE":
@@ -376,6 +414,9 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Update the all files table in this storage node
+     */
     private void updateAllFilesTable() {
         StorageMessages.UpdateAllFilesTable updateAllFilesTableMsg
                 = protoWrapperIn.getUpdateAllFilesTable();
@@ -384,6 +425,9 @@ public class SnSocketTask implements Runnable{
         stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
     }
 
+    /**
+     * Store chunk copy in this storage node from the other storage node sent
+     */
     private void storeChunkCopy() {
         if (!createDirectory()) {
             System.out.println("Creating Directory failed!!");
@@ -429,6 +473,12 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Update all the other storage nodes' all files position table
+     * multi-thread
+     * @param inputFileChunk
+     * @param nodeId
+     */
     private void updateOthersAllFilesPosTable(String inputFileChunk, int nodeId) {
         ExecutorService executorService =
                 Executors.newFixedThreadPool(Runtime.getRuntime()

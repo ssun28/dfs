@@ -52,6 +52,9 @@ public class SocketTask implements Runnable {
 //        }
     }
 
+    /**
+     * All requests from client
+     */
     private void clientRequest() {
         StorageMessages.AskInfo AskInfo
                 = protoWrapperIn.getAskInfo();
@@ -73,6 +76,9 @@ public class SocketTask implements Runnable {
         quit();
     }
 
+    /**
+     * Get the activeNodesList from metaDataTable and send it to the client
+     */
     private void getActiveNodesList() {
         ArrayList<StorageMessages.ActiveNode> activeNodesList = coorMetaData.getActiveNodesList();
         StorageMessages.ActiveNodesList activeNodesListMsgOut
@@ -88,6 +94,9 @@ public class SocketTask implements Runnable {
         clientRequestWrapperOut(askInfoMsgOut);
     }
 
+    /**
+     * Get the totalDiskSpace list from metaDataTable and send it to the client
+     */
     private void getTotalDiskSpace() {
         ArrayList<StorageMessages.DiskSpace> diskSpaceList = coorMetaData.getTotalDiskSpace();
         StorageMessages.TotalDiskSpace totalDiskSpaceMsgOut
@@ -103,6 +112,9 @@ public class SocketTask implements Runnable {
         clientRequestWrapperOut(askInfoMsgOut);
     }
 
+    /**
+     * Get the nodeRequestsNum list from metaDataTable and send it to the client
+     */
     private void getRequestsNum() {
         ArrayList<StorageMessages.NodeRequestsNum> nodeRequestsNumsList = coorMetaData.getNodeRuquestsNum();
         StorageMessages.RequestsNum requestsNumMsgOut
@@ -118,6 +130,10 @@ public class SocketTask implements Runnable {
         clientRequestWrapperOut(askInfoMsgOut);
     }
 
+    /**
+     * A basic protoWapperOut for response to client askInfo requests
+     * @param askInfoMsgOut
+     */
     private void clientRequestWrapperOut(StorageMessages.AskInfo askInfoMsgOut) {
         try {
             protoWrapperOut =
@@ -133,6 +149,10 @@ public class SocketTask implements Runnable {
         }
     }
 
+    /**
+     * All requests from storage node
+     * @param functionType
+     */
     private void storageNodeRequest(String functionType) {
         switch (functionType) {
             case "ADDNODE":
@@ -149,6 +169,11 @@ public class SocketTask implements Runnable {
         }
     }
 
+    /**
+     * A new storage node first connect to the coordinator and
+     * add to the hash space, give the space range and nodeId
+     * update the routing table, rtVersion in coordinator
+     */
     private void addNodeRequest() {
         int currentNodeId = coorMetaData.getNodeId() + 1;
         int newNodeNum = coorMetaData.getRoutingTableSize() + 1;
@@ -187,6 +212,11 @@ public class SocketTask implements Runnable {
         coorMetaData.setRtVersion(coorMetaData.getRtVersion() + 0.1);
     }
 
+    /**
+     * After the new storage node add into the hash space,
+     * heartbeat to get/update storage node Info from storage node
+     * send the new routing table to the storage node
+     */
     private void heartBeat() {
         while(true) {
             try {

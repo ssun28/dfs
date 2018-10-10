@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -74,6 +74,7 @@ public class Client {
                     storeFile();
                     break;
                 case 6:
+                    retrieveFile();
                     break;
                 default: break;
             }
@@ -84,6 +85,11 @@ public class Client {
         //sendData();
     }
 
+    /**
+     * Simple text-based command entry interface for user to select
+     * the option
+     * @return
+     */
     private int clientMenu() {
         int userOption = 0;
         boolean isRightOption = false;
@@ -130,6 +136,10 @@ public class Client {
         }
     }
 
+    /**
+     * Send request to coordinator and get the active nodes list
+     * from coordinator
+     */
     private void getActiveNodesList() {
         try {
             StorageMessages.AskInfo askInfoMsgOut
@@ -155,6 +165,10 @@ public class Client {
         }
     }
 
+    /**
+     * Send request to coordinator and get the total disk space
+     * from coordinator
+     */
     private void getTotalDiskSpace() {
         try {
             StorageMessages.AskInfo askInfoMsgOut
@@ -183,6 +197,10 @@ public class Client {
         }
     }
 
+    /**
+     * Send request to coordinator and get the nodes' requests number list
+     * from coordinator
+     */
     private void getRequestsNum() {
         try {
             StorageMessages.AskInfo askInfoMsgOut
@@ -208,6 +226,10 @@ public class Client {
         }
     }
 
+    /**
+     * A basic protoWapperOut for askInfo requests
+     * @param askInfoMsgOut
+     */
     private void askInfoRequestWapperOut(StorageMessages.AskInfo askInfoMsgOut) {
         try {
             protoWrapperOut =
@@ -223,6 +245,10 @@ public class Client {
         }
     }
 
+    /**
+     * Send request to a specific storage node and get the node files list
+     * from that storage node
+     */
     private void getStorageNodeFilesList() {
         try {
             StorageMessages.AskInfo askInfoMsgOut
@@ -248,6 +274,11 @@ public class Client {
         }
     }
 
+    /**
+     * Store a file: break the whole file into multiple chunks
+     * send each chunk name to a storage node to get the every positioned storage nodes
+     * multi-thread to send each chunk to the positioned storage node
+     */
     private void storeFile() {
         String fileName;
         String fileType = "";
@@ -270,8 +301,8 @@ public class Client {
             fileName = file;
         }
 
-        System.out.println("fileName = " + fileName);
-        System.out.println("fileType = " + fileType);
+//        System.out.println("fileName = " + fileName);
+//        System.out.println("fileType = " + fileType);
 //        File file = new File("./input/"+inputFilePath);
 
         long fileSize = f.length();
@@ -326,6 +357,49 @@ public class Client {
 
     }
 
+    private void retrieveFile() {
+        try {
+            System.out.println("Enter the file you want to retrieve: ");
+            System.out.print("File:");
+
+            Scanner scanner = new Scanner(System.in);
+            String inputFile = scanner.nextLine();
+
+            StorageMessages.RetrieveFile retrieveFileMsgOut
+                    = StorageMessages.RetrieveFile.newBuilder()
+                    .setAskChunksPos(inputFile)
+                    .build();
+
+            protoWrapperOut =
+                    StorageMessages.ProtoWrapper.newBuilder()
+                    .setRequestor(CLIENT)
+                    .setIp(clientIp)
+                    .setRetrieveFile(retrieveFileMsgOut)
+                    .build();
+
+            protoWrapperOut.writeDelimitedTo(client.getOutputStream());
+
+            protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                    client.getInputStream());
+
+            StorageMessages.RetrieveFile retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
+            StorageMessages.ResChunksPos resChunksPos = retrieveFileMsgIn.getResChunksPos();
+
+            Map<String, StorageMessages.NodeIdList> retrieveChunksPosTableMap = resChunksPos.getChunksPosMap();
+            Map<Integer, String> nodeIpTableMap = resChunksPos.getNodeIpTableMap();
+
+            if(retrieveChunksPosTableMap.size() != 0) {
+
+
+            }else {
+                System.out.println("There is no such file store in the file system!");
+                System.out.println("Please make sure you type the correct file name.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 //    private void sendData(String requestor, functionType type) {
 //        try {
 //            byte[] b = new byte[2];
@@ -368,6 +442,10 @@ public class Client {
         }
     }
 
+    /**
+     * Get local date time
+     * @return
+     */
     public String getLocalDataTime() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
@@ -399,36 +477,23 @@ public class Client {
 //        client.start();
 
 
+        ArrayList<Integer> nodeIdList = new ArrayList<>();
+        nodeIdList.add(0);
+        nodeIdList.add(1);
+        nodeIdList.add(3);
+        nodeIdList.add(5);
+        Collections.sort(nodeIdList);
+        int nodesNum = nodeIdList.size();
+        int test = (int)Math.pow(2, 14) - 1;
+        int result =  test/ ((int)Math.pow(2, 16) / nodesNum);
 
-//        String file = "file_8.s";
-//        String fileName;
-//        String fileType = "";
-//        String[] strings = new String[]{"file_8file_0.json", "file_1.json","file_2","file_8_2"};
-//
-//        if(file.contains(".")) {
-//            fileName = file.split("\\.")[0];
-//            fileType = "." + file.split("\\.")[1];
-//        }else {
-//            fileName = file;
-//        }
-//
-//        for(String s : strings) {
-//            String sfileName;
-//            String sfileType = "";
-//            if(s.contains(".")) {
-//                sfileName = s.split("\\.")[0];
-//                sfileType = "." + s.split("\\.")[1];
-//            }else {
-//                sfileName = s;
-//            }
-//
-//            int index = sfileName.lastIndexOf("_");
-//            String fileNamePre = sfileName.substring(0, index);
-//            if(fileName.equals(fileNamePre) && sfileType.equals(fileType)) {
-//                System.out.println("s = " + s);
-//            }
-//        }
+        int[] nodeIdArray = new int[nodeIdList.size()];
+        for(int i = 0; i < nodeIdArray.length; i++) {
+            nodeIdArray[i] = nodeIdList.get(i);
+        }
 
+        int nodeId = nodeIdArray[result];
+        System.out.println("nodeId = " + nodeId);
     }
 
 }

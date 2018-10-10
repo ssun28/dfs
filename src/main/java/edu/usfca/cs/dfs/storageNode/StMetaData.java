@@ -10,6 +10,10 @@ import java.util.Map;
 
 public class StMetaData {
 
+    /**
+     * routingTable: key: nodeId
+     * allFilesPosTable: key: chunk name
+     */
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<String, ArrayList<Integer>> allFilesPosTable;
     private StorageNodeInfo storageNodeInfo;
@@ -31,6 +35,10 @@ public class StMetaData {
         this.routingTable = routingTable;
     }
 
+    /**
+     * Update the routing table store in the storage node
+     * @param mp
+     */
     public synchronized void updateRoutingTable(Map<Integer, StorageMessages.StorageNodeHashSpace> mp) {
         for(Map.Entry<Integer, StorageMessages.StorageNodeHashSpace> e : mp.entrySet()) {
             int[] spaceRange = new int[]{e.getValue().getSpaceBegin(), e.getValue().getSpaceEnd()};
@@ -39,6 +47,10 @@ public class StMetaData {
         }
     }
 
+    /**
+     * Get node Ip list from routing table
+     * @return
+     */
     public synchronized ArrayList<String> getNodeIpList() {
         ArrayList<String> nodeIpList = new ArrayList<>();
         for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()) {
@@ -47,6 +59,10 @@ public class StMetaData {
         return nodeIpList;
     }
 
+    /**
+     * Get node Id list from routing table
+     * @return
+     */
     public synchronized ArrayList<Integer> getNodeIdList() {
         ArrayList<Integer> nodeIdList = new ArrayList<>();
         for(Integer i : routingTable.keySet()) {
@@ -55,6 +71,11 @@ public class StMetaData {
         return nodeIdList;
     }
 
+    /**
+     * Get 2 storage node id to store the 2 chunk copy
+     * @param firstChunkNodeId
+     * @return
+     */
     public synchronized int[] get2ChunkCopyNodeId (int firstChunkNodeId) {
         int[] nodeIdArray = new int[2];
         ArrayList<Integer> nodeIdList = new ArrayList<>();
@@ -86,6 +107,11 @@ public class StMetaData {
         this.allFilesPosTable = allFilesPosTable;
     }
 
+    /**
+     * Update the all files position table on the storage node
+     * @param inputFileChunk
+     * @param nodeId
+     */
     public synchronized void updateAllFilesPosTable(String inputFileChunk, int nodeId) {
         ArrayList<Integer> nodeIdList = allFilesPosTable.get(inputFileChunk);
 
@@ -99,6 +125,14 @@ public class StMetaData {
 
     }
 
+    /**
+     * When a client give a file name, give back a table contains all the file chunks
+     * key: chunkname
+     * value : nodeId list
+     * @param fileName
+     * @param fileType
+     * @return
+     */
     public synchronized Hashtable<String, StorageMessages.NodeIdList> getRetrieveChunksPos(String fileName, String fileType) {
         Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = new Hashtable<>();
         for(String s : allFilesPosTable.keySet()) {
@@ -137,7 +171,7 @@ public class StMetaData {
         storageNodeInfo.setRequestsNum(storageNodeInfo.getRequestsNum() + 1);
     }
 
-    public StorageNodeInfo getStorageNodeInfo() {
+    public synchronized StorageNodeInfo getStorageNodeInfo() {
         return storageNodeInfo;
     }
 

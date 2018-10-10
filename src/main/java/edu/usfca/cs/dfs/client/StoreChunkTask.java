@@ -28,6 +28,11 @@ public class StoreChunkTask implements Runnable {
         storeChunkData();
     }
 
+    /**
+     * Construct a fileNameWithType : fileName + chunkId + fileType, and
+     * ask that chunk's position from storage node
+     * get back a position nodeIp
+     */
     private void askPosition() {
         try {
             Socket socket = new Socket();
@@ -56,6 +61,9 @@ public class StoreChunkTask implements Runnable {
         }
     }
 
+    /**
+     * Store that chunk data to the position storage node
+     */
     private void storeChunkData() {
         try {
             Socket socket = new Socket();
@@ -83,6 +91,7 @@ public class StoreChunkTask implements Runnable {
                     StorageMessages.ProtoWrapper.parseDelimitedFrom(
                             socket.getInputStream());
 
+            ///store successful or fail
             String response = protoWrapperMsgIn.getResponse();
             String nodeIp = protoWrapperMsgIn.getIp();
             System.out.println("nodeIp = " + nodeIp + response);

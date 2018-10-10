@@ -67,6 +67,12 @@ public class HeartBeatTask implements Runnable{
         }
     }
 
+    /**
+     * Send addNode request to the coordinator which means to add to the hash ring
+     * new node to the hash ring and get nodeId back
+     * clean the directory if there are some old files store in the directory
+     *
+     */
     private void addNodeToCor() {
         try {
             StorageMessages.ProtoWrapper protoWrapperOut
@@ -106,6 +112,11 @@ public class HeartBeatTask implements Runnable{
         }
     }
 
+    /**
+     * Heartbeat with the coordinator
+     * send the storage node info to the coordinator
+     * get back new routing table back if it is updated
+     */
     private void heartBeat() {
 //        long checkDelay = 10;
 //        long keepAlive = 5000;
