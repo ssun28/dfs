@@ -3,6 +3,7 @@ package edu.usfca.cs.dfs.storageNode;
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.Scanner;
 
-public class HeartBeatTask implements Runnable{
+public class HeartBeatTask extends Thread{
 
 //    public static final int PORT = 37000;
 //    private static final double  GIGABYTES = 1024 * 1024 * 1024;
@@ -28,6 +29,7 @@ public class HeartBeatTask implements Runnable{
     private boolean isConnectedCoor;
     private StorageMessages.ProtoWrapper protoWrapperIn;
     private StorageMessages.ProtoWrapper protoWrapperOut;
+    private static Logger log;
 
     public HeartBeatTask(StMetaData stMetaData) {
         this.hbSocket = new Socket();
@@ -36,6 +38,7 @@ public class HeartBeatTask implements Runnable{
         this.rtVerstion = -1.0;
         this.protoWrapperIn = null;
         this.protoWrapperOut = null;
+        log = Logger.getLogger(HeartBeatTask.class);
     }
 
     public void run() {
@@ -165,21 +168,15 @@ public class HeartBeatTask implements Runnable{
 
                     lastSendTime = System.currentTimeMillis();
 
-                    System.out.println();
-                    System.out.println("node info");
-                    System.out.println("nodeId: "+ stMetaData.getStorageNodeInfo().getNodeId());
-                    System.out.println("nodeIp: " + stMetaData.getStorageNodeInfo().getNodeIp());
-                    int[] rangeArray = stMetaData.getRoutingTable().get(stMetaData.getStorageNodeInfo().getNodeId()).getSpaceRange();
-                    System.out.println("range: " + rangeArray[0] + "~" + rangeArray[1]);
-                    System.out.println("########################");
-                    System.out.println("Current routing table:");
-                    for(Map.Entry<Integer, StorageNodeHashSpace> e : stMetaData.getRoutingTable().entrySet()){
-                        System.out.println("e.getKey() = " + e.getKey());
-                        System.out.println("PositionNodeIp() = " + e.getValue().getNodeIp());
-                        System.out.println("SpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
-                        System.out.println("SpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
+                    log.info(stMetaData.getStorageNodeInfo().toString());
 
-                    }
+                    int[] rangeArray = stMetaData.getRoutingTable().get(stMetaData.getStorageNodeInfo().getNodeId()).getSpaceRange();
+                    log.info("Hash Space Range: " + rangeArray[0] + "~" + rangeArray[1]);
+
+//                    log.info("Current Routing table");
+//                    for(Map.Entry<Integer, StorageNodeHashSpace> e : stMetaData.getRoutingTable().entrySet()){
+//                        log.info(e.getKey() + "    " + e.getValue().toString());
+//                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

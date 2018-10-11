@@ -2,6 +2,7 @@ package edu.usfca.cs.dfs.storageNode;
 
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,45 +25,43 @@ public class SnSocketTask implements Runnable{
     public static final String STORAGENODE = "storageNode";
     public static final String COORDINATOR = "coordinator";
     public static final String CLIENT = "client";
-    public static final String DIR = "./bigdata/ssun28/";
+    public static final String DIR = "/bigdata/ssun28/";
     private static final int CHUNKSIZE = 8000000;
-    private static final int PORT = 37000;
+    private static final int PORT = 37100;
 
     private Socket socket;
     private StMetaData stMetaData;
     private StorageMessages.ProtoWrapper protoWrapperIn;
     private StorageMessages.ProtoWrapper protoWrapperOut;
     private String oriNodeIp;
+    private static Logger log;
 
     public SnSocketTask(Socket socket, StMetaData stMetaData) {
         this.socket = socket;
         this.stMetaData = stMetaData;
         this.oriNodeIp = stMetaData.getStorageNodeInfo().getNodeIp();
+        log = Logger.getLogger(SnSocketTask.class);
     }
 
     public void run() {
-        while(true) {
-            try {
-                protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
-                        socket.getInputStream());
-                String requestor = protoWrapperIn.getRequestor();
-                String functionType = protoWrapperIn.getFunctionCase().toString();
+        try {
+            protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                    socket.getInputStream());
+            String requestor = protoWrapperIn.getRequestor();
+            String functionType = protoWrapperIn.getFunctionCase().toString();
 
-                System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");
-                System.out.println("requestor is "+ requestor);
-                System.out.println("IP is "+ protoWrapperIn.getIp());
+            log.info("A " + requestor + "(" + protoWrapperIn.getIp()+ " ) has connected to Storage Node " + stMetaData.getStorageNodeInfo().getNodeId());
 
-                stMetaData.increaseReqNum();
-                if(requestor.equals(CLIENT)) {
-                    clientRequest(functionType);
-                }else if (requestor.equals(STORAGENODE)) {
-                    storageNodeRequest(functionType);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            stMetaData.increaseReqNum();
+            if(requestor.equals(CLIENT)) {
+                clientRequest(functionType);
+            }else if (requestor.equals(STORAGENODE)) {
+                storageNodeRequest(functionType);
             }
-            quit();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
     }
 
     /**
@@ -73,6 +72,7 @@ public class SnSocketTask implements Runnable{
         switch(functionType) {
             case "ASKPOSITION":
                 askPosition();
+                quit();
                 break;
             case "STORECHUNK":
                 try {
@@ -95,6 +95,7 @@ public class SnSocketTask implements Runnable{
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                quit();
                 break;
             case "RETRIEVEFILE":
                 StorageMessages.RetrieveFile retrieveFileMsgIn
@@ -127,12 +128,20 @@ public class SnSocketTask implements Runnable{
             byte[] bytes = mDigest.digest(fileNameWithType.getBytes());
             int hash16bits = bytesToInt(bytes);
 
+            log.info(fileNameWithType + "'s hash code is " + Integer.toHexString(hash16bits));
+
+
             ArrayList<Integer> nodeIdList = stMetaData.getNodeIdList();
             Collections.sort(nodeIdList);
             int nodesNum = nodeIdList.size();
-            int result = hash16bits / ((int)Math.pow(2, 16) / nodesNum);
+            int pieceSize = ((int)Math.pow(2, 16) / nodesNum);
+            System.out.println("piece size is" + pieceSize);
+            int result = hash16bits / pieceSize;
 
             int nodeId = nodeIdList.get(result);
+
+            log.info(fileNameWithType +" will store on node " + result + "-----" + nodeId);
+
             String positionNodeIp = stMetaData.getPositionNodeIp(nodeId);
 
             StorageMessages.ReturnPosition returnPositionMsg
@@ -192,6 +201,8 @@ public class SnSocketTask implements Runnable{
         byte[] b = storeChunkMsg.getData().toByteArray();
         File file = new File(DIR + fileName + "_" + chunkId + fileType);
 
+        log.info(fileName + "____"+ chunkId + "____" + fileType);
+
         try(FileOutputStream fo = new FileOutputStream(file)) {
             fo.write(b);
 
@@ -201,15 +212,13 @@ public class SnSocketTask implements Runnable{
             String inputFileChunk = fileName+ "_" + chunkId + fileType;
             int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
             stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
-            System.out.println("Store " + fileName + "_" + chunkId + fileType + " Successfully!");
+            log.info("Store " + fileName + "_" + chunkId + fileType + " Successfully!");
 
             TreeSet<Integer> nodeIdSetSuccess = new TreeSet<>();
 
             while(nodeIdSetSuccess.size() < 2) {
                 int[] nodeIdArray = stMetaData.get2ChunkCopyNodeId(stMetaData.getStorageNodeInfo().getNodeId());
                 for(int i = 0; i < nodeIdArray.length; i++) {
-
-
 
                     //////if socket failed
                     Socket copyChunkSocket = new Socket();
@@ -244,7 +253,12 @@ public class SnSocketTask implements Runnable{
                     }
                 }
             }
+
             updateOthersAllFilesPosTable(inputFileChunk, nodeId);
+
+            for(int i : nodeIdSetSuccess){
+                log.info("one of the back up is stored on " + i);
+            }
 //            for(Integer i : nodeIdSetSuccess) {
 //                stMetaData.updateAllFilesPosTable(inputFileChunk, i);
 //            }
@@ -287,6 +301,7 @@ public class SnSocketTask implements Runnable{
             fileName = fileNameWithType;
         }
 
+        log.info("Client is asking the chunk pos of "+ fileNameWithType);
 
         int numOfChunks = stMetaData.getNumOfChunksTable().get(fileNameWithType);
         Hashtable<String, StorageMessages.NodeIdList> retrieveChunksPosTable = new Hashtable<>();
@@ -433,6 +448,7 @@ public class SnSocketTask implements Runnable{
                 break;
             default: break;
         }
+        quit();
     }
 
     /**

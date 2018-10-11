@@ -63,4 +63,9 @@ public class StorageNodeInfo {
     public synchronized void setRequestsNum(int requestsNum) {
         this.requestsNum = requestsNum;
     }
+
+    @Override
+    public String toString(){
+        return nodeId + "    " + nodeIp + "    " + active + "    "+ spaceCap + " GB available " + requestsNum + " requests";
+    }
 }

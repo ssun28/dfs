@@ -3,6 +3,10 @@ package edu.usfca.cs.dfs.client;
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.coordinator.Coordinator;
+import edu.usfca.cs.dfs.storageNode.StorageNode;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+import sun.plugin.dom.core.CoreConstants;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -14,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
 
@@ -33,9 +38,11 @@ public class Client {
     private boolean isConnectedCoor = false;
     private StorageMessages.ProtoWrapper protoWrapperIn;
     private StorageMessages.ProtoWrapper protoWrapperOut;
+    private static Logger log;
 
     public Client() {
         this.client = new Socket();
+        log = Logger.getLogger(Client.class);
         try {
             inetAddress = InetAddress.getLocalHost();
             this.clientIp = inetAddress.getHostAddress();
@@ -64,14 +71,19 @@ public class Client {
                     break;
                 default: break;
             }
+            log.info("client quit!");
+            quit();
         }else if (clientOption >=4 && clientOption <= 6){
             connectServer(STORAGENODE);
             switch (clientOption) {
                 case 4:
                     getStorageNodeFilesList();
+                    quit();
                     break;
                 case 5:
                     storeFile();
+                    System.out.println("finish store");
+                    ////// no quit need !!!!
                     break;
                 case 6:
                     retrieveFile();
@@ -79,6 +91,7 @@ public class Client {
                 default: break;
             }
         }
+        log.info("client will start again!");
 
         start();
 
@@ -110,6 +123,7 @@ public class Client {
                 isRightOption = true;
             }
         }
+
         return userOption;
     }
 
@@ -118,7 +132,14 @@ public class Client {
             System.out.print("Enter the " + serverType + "'s IP address : ");
             Scanner scanner = new Scanner(System.in);
             try {
+
                 serverIP = InetAddress.getByName(scanner.nextLine());
+                System.out.println("serverIP = " + serverIP);
+                if(serverType.equals(STORAGENODE)){
+                    isConnectedCoor = false;
+                    return;
+                }
+
                 client.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
 
                 isConnectedCoor = true;
@@ -134,6 +155,7 @@ public class Client {
                 e.printStackTrace();
             }
         }
+        isConnectedCoor = false;
     }
 
     /**
@@ -251,6 +273,9 @@ public class Client {
      */
     private void getStorageNodeFilesList() {
         try {
+            System.out.println("ServerIp = " + serverIP);
+            client.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
+            System.out.println("has Connected");
             StorageMessages.AskInfo askInfoMsgOut
                     = StorageMessages.AskInfo.newBuilder()
                     .setNodeFilesList(true)
@@ -268,7 +293,6 @@ public class Client {
             for(StorageMessages.StoreChunk c : nodeFilesList.getStoreChunkList()) {
                 System.out.println(c.getFileName() + "_" + c.getChunkId() + c.getFileType());
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -301,16 +325,12 @@ public class Client {
             fileName = file;
         }
 
-//        System.out.println("fileName = " + fileName);
-//        System.out.println("fileType = " + fileType);
-//        File file = new File("./input/"+inputFilePath);
-
         long fileSize = f.length();
 
-//        System.out.println("fileSize" + fileSize+"_# of chunks :"+(fileSize/CHUNKSIZE));
         long numChunks = (fileSize/CHUNKSIZE) + (fileSize % CHUNKSIZE == 0 ? 0 : 1);
 
-//        System.out.println("numChunks = " + numChunks);
+        log.info(fileName + " has " + numChunks + " chunks with chunk size :" + CHUNKSIZE + " mb");
+
         try(FileInputStream fs = new FileInputStream(f)) {
             ExecutorService executorService = Executors.newFixedThreadPool(NTHREADS);
 
@@ -319,40 +339,28 @@ public class Client {
             byte[] b = new byte[CHUNKSIZE];
             ClientMetaData clientMetaData = new ClientMetaData(fileName, fileType, (int)numChunks, clientIp, serverIP);
             while((size = fs.read(b)) != -1) {
-                System.out.println("size = " + size +"_"+"byte[] size:" + b.length);
+                log.info(chunkId + "'s size = " + size + " with byte[] size:" + b.length);
                 ByteString data = ByteString.copyFrom(b, 0, size);
 
                 StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, data, size);
                 executorService.execute(storeChunkTask);
 
-
-//                StorageMessages.StoreChunk storeChunkMsg
-//                        = StorageMessages.StoreChunk.newBuilder()
-//                        .setFileName(fileName)
-//                        .setFileType(fileType)
-//                        .setChunkId(chunkId)
-//                        .setData(data)
-//                        .setNumChunks((int)numChunks)
-//                        .build();
-//
-//                StorageMessages.ProtoWrapper protoWrapper =
-//                        StorageMessages.ProtoWrapper.newBuilder()
-//                                .setRequestor("client")
-//                                .setIp(inetAddress.getHostAddress())
-//                                .setStoreChunk(storeChunkMsg)
-//                                .build();
-//                protoWrapper.writeDelimitedTo(client.getOutputStream());
                 b = new byte[CHUNKSIZE];
                 chunkId++;
-            }
-            Thread.currentThread().join();
 
+            }
+            executorService.shutdown();
+            try {
+                executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            System.out.println("All finish");
         } catch (FileNotFoundException fds) {
             System.out.println(fds.getMessage());
         } catch (IOException e) {
             System.out.println(e.getMessage());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
 
     }
@@ -442,15 +450,15 @@ public class Client {
         }
     }
 
-    /**
-     * Get local date time
-     * @return
-     */
-    public String getLocalDataTime() {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-        LocalDateTime now = LocalDateTime.now();
-        return dtf.format(now);
-    }
+//    /**
+//     * Get local date time
+//     * @return
+//     */
+//    public String getLocalDataTime() {
+//        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+//        LocalDateTime now = LocalDateTime.now();
+//        return dtf.format(now);
+//    }
 
     public static void main(String[] args) {
 //        double  MEGABYTE = 1024 * 1024 * 1024;
@@ -471,10 +479,12 @@ public class Client {
 //        }
 //
 //        System.out.println(df2.format(new File("/").getUsableSpace()/MEGABYTE)); //in GB
+        String filePath = System.getProperty("user.dir")
+                + "/log4j.properties";
+        PropertyConfigurator.configure(filePath);
+        Client client = new Client();
 
-//        Client client = new Client();
-//        System.out.println(client.getLocalDataTime() + " Starting client...");
-//        client.start();
+        client.start();
 
 
     }

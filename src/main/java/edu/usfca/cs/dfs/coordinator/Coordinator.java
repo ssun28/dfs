@@ -14,6 +14,9 @@ import java.util.Hashtable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+
 public class Coordinator {
 
     public static final int PORT = 37000;
@@ -27,7 +30,7 @@ public class Coordinator {
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<Integer, StorageNodeInfo> metaDataTable;
 //    private double timeStamp;
-
+    private static Logger log = Logger.getLogger(Coordinator.class);
 
     public Coordinator() {
         String coorIp = getIpAddress();
@@ -56,8 +59,8 @@ public class Coordinator {
 //                System.out.println("IP is "+ protoWrapper.getIp());
 
 //                System.out.println("Function is "+ protoWrapper.getFunctionCase());
-                SocketTask socketTask = new SocketTask(socket, coorMetaData);
-                executorService.execute(socketTask);
+                CoorSocketTask coorSocketTask = new CoorSocketTask(socket, coorMetaData);
+                executorService.execute(coorSocketTask);
 //                System.out.println("Test coordinator begin !!!!!!");
 //                for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
 //                    System.out.println("e.getKey() = " + e.getKey());
@@ -66,7 +69,7 @@ public class Coordinator {
 //                    System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
 //
 //                }
-//                executorService.execute(new SocketTask(socket, routingTable, nodeId));
+//                executorService.execute(new CoorSocketTask(socket, routingTable, nodeId));
 
             }
 
@@ -105,6 +108,10 @@ public class Coordinator {
 
     public static void main(String[] args) {
         //System.out.println("Starting coordinator...");
+        String filePath = System.getProperty("user.dir")
+
+                + "/log4j.properties";
+        PropertyConfigurator.configure(filePath);
         Coordinator cd = new Coordinator();
         cd.start();
     }

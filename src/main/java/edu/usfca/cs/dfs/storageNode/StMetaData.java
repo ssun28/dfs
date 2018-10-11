@@ -100,9 +100,7 @@ public class StMetaData {
 
 
     public synchronized void updateNumOfChunks(String fileName, String fileType, int numChunks) {
-        if(numOfChunksTable.get(fileName+fileType) > numChunks) {
-            numOfChunksTable.put(fileName+fileType, numChunks);
-        }
+        numOfChunksTable.put(fileName+fileType, numChunks);
     }
 
     public synchronized String getPositionNodeIp(int nodeId) {
