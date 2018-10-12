@@ -6,13 +6,13 @@ import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.storageNode.StorageNode;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
-import sun.plugin.dom.core.CoreConstants;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -28,6 +28,8 @@ public class Client {
     public static final String CLIENT = "client";
     private static final String STORAGENODE = "storageNode";
     private static final String COORDINATOR = "coordinator";
+    private static DecimalFormat df2 = new DecimalFormat(".##");
+
 
     public enum functionType {STORE_CHUNK,ASK_INFO};
 
@@ -212,6 +214,8 @@ public class Client {
                 System.out.println("NodeId: " + node.getNodeId() + ", NodeIp: " + node.getNodeIp() + ", disk space available: " + node.getSpace());
                 total+= node.getSpace();
             }
+
+            total = Double.parseDouble(df2.format(total));
             System.out.println("The total disk space available in the cluster (in GB) from coordinator is " + total);
 
         } catch (IOException e) {
@@ -291,7 +295,7 @@ public class Client {
 
             System.out.println("Here is the list of files stored on the given storage node: ");
             for(StorageMessages.StoreChunk c : nodeFilesList.getStoreChunkList()) {
-                System.out.println(c.getFileName() + "_" + c.getChunkId() + c.getFileType());
+                System.out.println(c.getFileName() + "_" + c.getChunkId() + c.getFileType() + "of total " + c.getNumChunks() + " chunks");
             }
         } catch (IOException e) {
             e.printStackTrace();

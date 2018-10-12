@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 
 public class SnSocketTask implements Runnable{
 
+    public static final String HASH_ALGORITHM_SHA1 = "SHA1";
     public static final String STORAGENODE = "storageNode";
     public static final String COORDINATOR = "coordinator";
     public static final String CLIENT = "client";
@@ -123,7 +124,7 @@ public class SnSocketTask implements Runnable{
     private void askPosition() {
         try {
             String fileNameWithType = protoWrapperIn.getAskPosition();
-            MessageDigest mDigest = MessageDigest.getInstance("SHA1");
+            MessageDigest mDigest = MessageDigest.getInstance(HASH_ALGORITHM_SHA1);
 
             byte[] bytes = mDigest.digest(fileNameWithType.getBytes());
             int hash16bits = bytesToInt(bytes);
