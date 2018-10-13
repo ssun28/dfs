@@ -2,6 +2,7 @@ package edu.usfca.cs.dfs.client;
 
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.coordinator.CoorMetaData;
 import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.storageNode.StorageNode;
 import org.apache.log4j.Logger;
@@ -20,10 +21,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+
+/**
+ * Client class: the entrance for the client
+ * client will send different requests to coordinator or
+ * storage node to get the information
+ */
 public class Client {
 
 //    public static final int PORT = 37000;
-    private static final int CHUNKSIZE = 8000000;
+    public static final int CHUNKSIZE = 8000000;
     private static final int NTHREADS = 20;
     public static final String CLIENT = "client";
     private static final String STORAGENODE = "storageNode";
@@ -53,6 +60,9 @@ public class Client {
         }
     }
 
+    /**
+     * Main start method
+     */
     public void start() {
         int clientOption = clientMenu();
 
@@ -73,7 +83,6 @@ public class Client {
                     break;
                 default: break;
             }
-            log.info("client quit!");
             quit();
         }else if (clientOption >=4 && clientOption <= 6){
             connectServer(STORAGENODE);
@@ -89,15 +98,12 @@ public class Client {
                     break;
                 case 6:
                     retrieveFile();
+                    quit();
                     break;
                 default: break;
             }
         }
-        log.info("client will start again!");
-
         start();
-
-        //sendData();
     }
 
     /**
@@ -129,6 +135,10 @@ public class Client {
         return userOption;
     }
 
+    /**
+     * Connect to the coordinator
+     * @param serverType
+     */
     public void connectServer(String serverType) {
         while(!isConnectedCoor) {
             System.out.print("Enter the " + serverType + "'s IP address : ");
@@ -141,7 +151,7 @@ public class Client {
                     isConnectedCoor = false;
                     return;
                 }
-
+                client = new Socket();
                 client.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
 
                 isConnectedCoor = true;
@@ -278,8 +288,10 @@ public class Client {
     private void getStorageNodeFilesList() {
         try {
             System.out.println("ServerIp = " + serverIP);
+            client = new Socket();
+//            client.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
             client.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
-            System.out.println("has Connected");
+
             StorageMessages.AskInfo askInfoMsgOut
                     = StorageMessages.AskInfo.newBuilder()
                     .setNodeFilesList(true)
@@ -295,7 +307,7 @@ public class Client {
 
             System.out.println("Here is the list of files stored on the given storage node: ");
             for(StorageMessages.StoreChunk c : nodeFilesList.getStoreChunkList()) {
-                System.out.println(c.getFileName() + "_" + c.getChunkId() + c.getFileType() + "of total " + c.getNumChunks() + " chunks");
+                System.out.println(c.getFileName() + "_" + c.getChunkId() + c.getFileType() + "  " + c.getChunkSize() +"  " + c.getNumChunks());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -344,9 +356,9 @@ public class Client {
             ClientMetaData clientMetaData = new ClientMetaData(fileName, fileType, (int)numChunks, clientIp, serverIP);
             while((size = fs.read(b)) != -1) {
                 log.info(chunkId + "'s size = " + size + " with byte[] size:" + b.length);
-                ByteString data = ByteString.copyFrom(b, 0, size);
+//                ByteString data = ByteString.copyFrom(b, 0, size);
 
-                StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, data, size);
+                StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, b, size);
                 executorService.execute(storeChunkTask);
 
                 b = new byte[CHUNKSIZE];
@@ -369,6 +381,10 @@ public class Client {
 
     }
 
+    /**
+     * Retrieve a file: ask a storage node for all the file chunks' position in
+     * the system, and parallel retrieve each chunk and reconstruct the file
+     */
     private void retrieveFile() {
         try {
             System.out.println("Enter the file you want to retrieve: ");
@@ -376,6 +392,11 @@ public class Client {
 
             Scanner scanner = new Scanner(System.in);
             String inputFile = scanner.nextLine();
+
+
+            client = new Socket();
+            client.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
+
 
             StorageMessages.RetrieveFile retrieveFileMsgOut
                     = StorageMessages.RetrieveFile.newBuilder()
@@ -390,9 +411,11 @@ public class Client {
                     .build();
 
             protoWrapperOut.writeDelimitedTo(client.getOutputStream());
-
+            // get list
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     client.getInputStream());
+
+
 
             StorageMessages.RetrieveFile retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
             StorageMessages.ResChunksPos resChunksPos = retrieveFileMsgIn.getResChunksPos();
@@ -400,7 +423,30 @@ public class Client {
             Map<String, StorageMessages.NodeIdList> retrieveChunksPosTableMap = resChunksPos.getChunksPosMap();
             Map<Integer, String> nodeIpTableMap = resChunksPos.getNodeIpTableMap();
 
+            ///can't connect the nodeId
             if(retrieveChunksPosTableMap.size() != 0) {
+                ExecutorService executorService = Executors.newFixedThreadPool(NTHREADS);
+                Hashtable<Integer, byte[]> chunkTable = new Hashtable<>();
+
+                for(Map.Entry<String, StorageMessages.NodeIdList> c : retrieveChunksPosTableMap.entrySet()) {
+                    String retrieveChunkName = c.getKey();
+                    StorageMessages.NodeIdList nodeIdList = c.getValue();
+                    ////
+                    int nodeId = nodeIdList.getNodeId(0);
+                    String nodeIp = nodeIpTableMap.get(nodeId);
+
+                    RetrieveChunkTask retrieveChunkTask = new RetrieveChunkTask(retrieveChunkName, nodeId, nodeIp, clientIp, chunkTable);
+                    executorService.execute(retrieveChunkTask);
+
+                }
+                executorService.shutdown();
+
+                try {
+                    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                merge(chunkTable, inputFile);
 
 
             }else {
@@ -412,43 +458,33 @@ public class Client {
         }
     }
 
-//    private void sendData(String requestor, functionType type) {
-//        try {
-//            byte[] b = new byte[2];
-//            StorageMessages.ProtoWrapper.Builder builder =
-//                    StorageMessages.ProtoWrapper.newBuilder()
-//                    .setRequestor(requestor)
-//                    .setIp(inetAddress.getHostAddress());
-//
-//            switch(type){
-//                case STORE_CHUNK:
-//                    StorageMessages.StoreChunk chunk =
-//                            StorageMessages.StoreChunk.newBuilder()
-//                            .setChunkId(1)
-//                            .setFileName("")
-//                            .setData(b).build();
-//
-//                    builder.setStoreChunk(chunk);
-//                    break;
-//                case ASK_INFO:
-//                    builder.setAskInfo(true);
-//            }
-//
-//
-//            StorageMessages.ProtoWrapper protoWrapper = builder.build();
-//
-//            protoWrapper.writeDelimitedTo(client.getOutputStream());
-////            os = client.getOutputStream();
-////            os.write(1);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//    }
-
+    /**
+     * Close the socket
+     */
     public void quit() {
         try {
             client.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void merge(Hashtable<Integer, byte[]> chunkTable, String fileName){
+        File file = new File(StorageNode.DIR + fileName);
+        System.out.println("chunkTable = " + chunkTable.size());
+        log.info(fileName +" is merging!");
+        int numOfChunks = chunkTable.size();
+        try{
+            FileOutputStream fo = new FileOutputStream(file);
+            for(int i = 0 ; i < numOfChunks;i++){
+                byte[] data = chunkTable.get(i);
+                int size = data.length;
+                fo.write(data, 0, size);
+                chunkTable.remove(i);
+            }
+            fo.flush();
+            fo.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }

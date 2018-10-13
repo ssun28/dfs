@@ -7,11 +7,14 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Map;
 
+/**
+ * CoorSocketTask: deal with a socket request from client or
+ * storage nodes
+ */
 public class CoorSocketTask implements Runnable {
 
     private static final int HASHRING_PIECES = (int)Math.pow(2,16);
@@ -34,6 +37,10 @@ public class CoorSocketTask implements Runnable {
         log = Logger.getLogger(CoorSocketTask.class);
     }
 
+    /**
+     * Main run method:
+     * See what kind of the requestor is
+     */
     public void run() {
         try {
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
@@ -228,7 +235,7 @@ public class CoorSocketTask implements Runnable {
 
                 setStorageNodeInfo(heartBeatInMsg);
 
-                StorageMessages.Heartbeat heartBeatMsgOut = setHeartBeatOutMsg(heartBeatInMsg);
+                StorageMessages.Heartbeat heartBeatMsgOut = setHeartBeatMsgOut(heartBeatInMsg);
 
                 protoWrapperOut
                         = StorageMessages.ProtoWrapper.newBuilder()
@@ -252,7 +259,10 @@ public class CoorSocketTask implements Runnable {
         }
     }
 
-
+    /**
+     * Add/update the storage node info to the metaDataTable
+     * @param heartBeatInMsg
+     */
     private void setStorageNodeInfo(StorageMessages.Heartbeat heartBeatInMsg){
         StorageMessages.StorageNodeInfo snMsg
                 = heartBeatInMsg.getStorageNodeInfo();
@@ -262,7 +272,12 @@ public class CoorSocketTask implements Runnable {
         coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
     }
 
-    private StorageMessages.Heartbeat setHeartBeatOutMsg(StorageMessages.Heartbeat heartBeatInMsg){
+    /**
+     * Construct a heartBeat Msg Out protoWrapper
+     * @param heartBeatInMsg
+     * @return
+     */
+    private StorageMessages.Heartbeat setHeartBeatMsgOut(StorageMessages.Heartbeat heartBeatInMsg){
         double rtVersion = heartBeatInMsg.getRtVersion();
 
 
@@ -289,9 +304,20 @@ public class CoorSocketTask implements Runnable {
     }
 
     private void removeNode(int nodeId){
-
+        Hashtable<Integer, StorageNodeHashSpace> routingTable = coorMetaData.getRoutingTable();
+        for(int id : routingTable.keySet()){
+            if(id != nodeId){
+                moveFiles(id);
+                break;
+            }
+        }
     }
 
+
+    private void moveFiles(int nodeId){
+//        Thread t = new MoveFileTask(nodeIp, failNodeId);
+//        t.start();
+    }
 
 
     private void quit() {

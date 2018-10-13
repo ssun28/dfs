@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
+/**
+ * MetaData for the coorSocketTasks: multi threads can share the data
+ */
 public class CoorMetaData {
 
     /**
@@ -91,6 +94,11 @@ public class CoorMetaData {
         this.metaDataTable = metaDataTable;
     }
 
+    /**
+     * Add node to the metaDataTable
+     * @param nodeId
+     * @param sn
+     */
     public synchronized void addNodeToMetaDataTable(int nodeId, StorageNodeInfo sn) {
         this.metaDataTable.put(nodeId, sn);
     }

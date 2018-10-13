@@ -2,6 +2,9 @@ package edu.usfca.cs.dfs.client;
 
 import java.net.InetAddress;
 
+/**
+ * MetaData for the client: multi threads can share the data
+ */
 public class ClientMetaData {
 
     private String storeFileName;

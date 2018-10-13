@@ -17,6 +17,11 @@ import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
+/**
+ * Coordinator class: the entrance for the coordinator
+ * coordinator will receive different requests from client
+ * storage nodes and give back information
+ */
 public class Coordinator {
 
     public static final int PORT = 37000;
@@ -29,7 +34,6 @@ public class Coordinator {
     private boolean isStarted = true;
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<Integer, StorageNodeInfo> metaDataTable;
-//    private double timeStamp;
     private static Logger log = Logger.getLogger(Coordinator.class);
 
     public Coordinator() {
@@ -37,7 +41,6 @@ public class Coordinator {
         this.routingTable = new Hashtable<>();
         this.metaDataTable = new Hashtable<>();
         this.coorMetaData = new CoorMetaData(routingTable, metaDataTable, -1, 0.0, coorIp);
-//        this.timeStamp = 0.00;
         try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
             serverSocket = new ServerSocket(PORT);
@@ -47,6 +50,11 @@ public class Coordinator {
         }
     }
 
+    /**
+     * Main start: as the server, receive a socket and pick a thread
+     * to do that socket task
+     *
+     */
     public void start() {
         try {
             while(isStarted) {
@@ -61,14 +69,6 @@ public class Coordinator {
 //                System.out.println("Function is "+ protoWrapper.getFunctionCase());
                 CoorSocketTask coorSocketTask = new CoorSocketTask(socket, coorMetaData);
                 executorService.execute(coorSocketTask);
-//                System.out.println("Test coordinator begin !!!!!!");
-//                for(Map.Entry<Integer, StorageNodeHashSpace> e : routingTable.entrySet()){
-//                    System.out.println("e.getKey() = " + e.getKey());
-//                    System.out.println("e.getValue().getPositionNodeIp() = " + e.getValue().getNodeIp());
-//                    System.out.println("e.getValue().getSpaceRange(0) = " + e.getValue().getSpaceRange()[0]);
-//                    System.out.println("e.getValue().getSpaceRange(1) = " + e.getValue().getSpaceRange()[1]);
-//
-//                }
 //                executorService.execute(new CoorSocketTask(socket, routingTable, nodeId));
 
             }
@@ -78,12 +78,20 @@ public class Coordinator {
         }
     }
 
+    /**
+     * Get the local time
+     * @return
+     */
     private String getLocalDataTime() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
         return dtf.format(now);
     }
 
+    /**
+     * Get the ip address of the current host.
+     * @return
+     */
     private String getIpAddress() {
         InetAddress inetAddress;
         try {
@@ -97,6 +105,9 @@ public class Coordinator {
         return null;
     }
 
+    /**
+     * Close the socket
+     */
     public void quit() {
         try {
             this.isStarted = false;
@@ -107,9 +118,7 @@ public class Coordinator {
     }
 
     public static void main(String[] args) {
-        //System.out.println("Starting coordinator...");
         String filePath = System.getProperty("user.dir")
-
                 + "/log4j.properties";
         PropertyConfigurator.configure(filePath);
         Coordinator cd = new Coordinator();

@@ -1,5 +1,6 @@
 package edu.usfca.cs.dfs.storageNode;
 
+import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -18,9 +19,15 @@ import java.util.Hashtable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * StorageNode class: the entrance for the storage node
+ * storageNode will send requests to the coordinator and other
+ * storageNodes and receive requests from client and other storage nodes
+ */
 public class StorageNode {
 
-    private static final String DIR = "/bigdata/ssun28/";
+    public static final String HASH_ALGORITHM_SHA1 = "SHA1";
+    public static final String DIR = "/bigdata/ssun28/";
     private static final int NTHREADS = 20;
     public static final int PORT = 37100;
 
@@ -32,7 +39,7 @@ public class StorageNode {
     private Hashtable<String, ArrayList<Integer>> allFilesPosTable;
     private Hashtable<String, Integer> numOfChunksTable;
     private StorageNodeInfo storageNodeInfo;
-    private HashSet<Chunk> chunksList;
+    private Hashtable<String, Chunk> chunksMap;
     private int requestsNum;
 
     private static Logger log;
@@ -44,8 +51,8 @@ public class StorageNode {
         this.allFilesPosTable = new Hashtable<>();
         this.numOfChunksTable = new Hashtable<>();
         this.storageNodeInfo = new StorageNodeInfo(-1,snIp, false, 0.0, 0);
-        this.chunksList = new HashSet<>();
-        this.stMetaData = new StMetaData(routingTable, allFilesPosTable, numOfChunksTable, storageNodeInfo, chunksList);
+        this.chunksMap = new Hashtable<>();
+        this.stMetaData = new StMetaData(routingTable, allFilesPosTable, numOfChunksTable, storageNodeInfo, chunksMap);
         this.requestsNum = 0;
         this.log = Logger.getLogger(StorageNode.class);
 //        if(!createDirectory()){
@@ -53,7 +60,9 @@ public class StorageNode {
 //        }
         try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
+//            serverSocket = new ServerSocket(Coordinator.PORT);
             serverSocket = new ServerSocket(PORT);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -67,6 +76,11 @@ public class StorageNode {
         return true;
     }
 
+    /**
+     * Main start method
+     * make a particular to do the heartbeat task
+     * receive a socket and pick a thread to do that snSocket task
+     */
     public void start() {
         HeartBeatTask hbTask = new HeartBeatTask(stMetaData);
         hbTask.start();
@@ -74,7 +88,6 @@ public class StorageNode {
         try {
             while(isStarted) {
                 Socket socket = serverSocket.accept();
-                System.out.println("Some one has connected");
                 log.info(socket.getRemoteSocketAddress().toString() + " has connected ");
                 SnSocketTask snSocketTask = new SnSocketTask(socket, stMetaData);
                 executorService.execute(snSocketTask);
@@ -124,7 +137,11 @@ public class StorageNode {
         }
     }
 
-
+    /**
+     * Get the ip address of the current host.
+     *
+     * @return ip address
+     */
     private String getIpAddress() {
         InetAddress inetAddress;
         try {
@@ -137,6 +154,10 @@ public class StorageNode {
         return null;
     }
 
+    /**
+     * Get the local time
+     * @return
+     */
     private String getLocalDataTime() {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
@@ -150,15 +171,4 @@ public class StorageNode {
         StorageNode storageNode = new StorageNode();
         storageNode.start();
     }
-
-    /**
-     * Retrieves the short host name of the current host.
-     *
-     * @return name of the current host
-     */
-    private static String getHostname()
-    throws UnknownHostException {
-        return InetAddress.getLocalHost().getHostName();
-    }
-
 }
