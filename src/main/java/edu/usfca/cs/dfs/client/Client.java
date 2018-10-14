@@ -95,15 +95,17 @@ public class Client {
                     break;
                 default: break;
             }
-        }else if (clientOption == 8) {
-            connectServer(COORDINATOR);
-            removeNodeOperation();
-            quit();
-        }else if (clientOption == 9) {
-            connectServer(STORAGENODE);
-            printAllfilesTable();
-            quit();
         }
+
+//        else if (clientOption == 8) {
+//            connectServer(COORDINATOR);
+//            removeNodeOperation();
+//            quit();
+//        }else if (clientOption == 9) {
+//            connectServer(STORAGENODE);
+//            printAllfilesTable();
+//            quit();
+//        }
 
         start();
     }

@@ -11546,6 +11546,11 @@ public final class StorageMessages {
      * <code>int32 nodeId = 2;</code>
      */
     int getNodeId();
+
+    /**
+     * <code>int32 numOfChunk = 3;</code>
+     */
+    int getNumOfChunk();
   }
   /**
    * Protobuf type {@code UpdateAllFilesTable}
@@ -11562,6 +11567,7 @@ public final class StorageMessages {
     private UpdateAllFilesTable() {
       inputFileChunk_ = "";
       nodeId_ = 0;
+      numOfChunk_ = 0;
     }
 
     @java.lang.Override
@@ -11597,6 +11603,11 @@ public final class StorageMessages {
             case 16: {
 
               nodeId_ = input.readInt32();
+              break;
+            }
+            case 24: {
+
+              numOfChunk_ = input.readInt32();
               break;
             }
             default: {
@@ -11674,6 +11685,15 @@ public final class StorageMessages {
       return nodeId_;
     }
 
+    public static final int NUMOFCHUNK_FIELD_NUMBER = 3;
+    private int numOfChunk_;
+    /**
+     * <code>int32 numOfChunk = 3;</code>
+     */
+    public int getNumOfChunk() {
+      return numOfChunk_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -11694,6 +11714,9 @@ public final class StorageMessages {
       if (nodeId_ != 0) {
         output.writeInt32(2, nodeId_);
       }
+      if (numOfChunk_ != 0) {
+        output.writeInt32(3, numOfChunk_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -11709,6 +11732,10 @@ public final class StorageMessages {
       if (nodeId_ != 0) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(2, nodeId_);
+      }
+      if (numOfChunk_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(3, numOfChunk_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -11730,6 +11757,8 @@ public final class StorageMessages {
           .equals(other.getInputFileChunk());
       result = result && (getNodeId()
           == other.getNodeId());
+      result = result && (getNumOfChunk()
+          == other.getNumOfChunk());
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -11745,6 +11774,8 @@ public final class StorageMessages {
       hash = (53 * hash) + getInputFileChunk().hashCode();
       hash = (37 * hash) + NODEID_FIELD_NUMBER;
       hash = (53 * hash) + getNodeId();
+      hash = (37 * hash) + NUMOFCHUNK_FIELD_NUMBER;
+      hash = (53 * hash) + getNumOfChunk();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -11882,6 +11913,8 @@ public final class StorageMessages {
 
         nodeId_ = 0;
 
+        numOfChunk_ = 0;
+
         return this;
       }
 
@@ -11910,6 +11943,7 @@ public final class StorageMessages {
         edu.usfca.cs.dfs.StorageMessages.UpdateAllFilesTable result = new edu.usfca.cs.dfs.StorageMessages.UpdateAllFilesTable(this);
         result.inputFileChunk_ = inputFileChunk_;
         result.nodeId_ = nodeId_;
+        result.numOfChunk_ = numOfChunk_;
         onBuilt();
         return result;
       }
@@ -11964,6 +11998,9 @@ public final class StorageMessages {
         }
         if (other.getNodeId() != 0) {
           setNodeId(other.getNodeId());
+        }
+        if (other.getNumOfChunk() != 0) {
+          setNumOfChunk(other.getNumOfChunk());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -12085,6 +12122,32 @@ public final class StorageMessages {
       public Builder clearNodeId() {
         
         nodeId_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private int numOfChunk_ ;
+      /**
+       * <code>int32 numOfChunk = 3;</code>
+       */
+      public int getNumOfChunk() {
+        return numOfChunk_;
+      }
+      /**
+       * <code>int32 numOfChunk = 3;</code>
+       */
+      public Builder setNumOfChunk(int value) {
+        
+        numOfChunk_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 numOfChunk = 3;</code>
+       */
+      public Builder clearNumOfChunk() {
+        
+        numOfChunk_ = 0;
         onChanged();
         return this;
       }
@@ -14975,6 +15038,11 @@ public final class StorageMessages {
      */
     com.google.protobuf.ByteString
         getSouceNodeIpBytes();
+
+    /**
+     * <code>int32 numOfChunk = 4;</code>
+     */
+    int getNumOfChunk();
   }
   /**
    * Protobuf type {@code RemoveNode}
@@ -14992,6 +15060,7 @@ public final class StorageMessages {
       failNodeId_ = 0;
       chunkName_ = "";
       souceNodeIp_ = "";
+      numOfChunk_ = 0;
     }
 
     @java.lang.Override
@@ -15033,6 +15102,11 @@ public final class StorageMessages {
               java.lang.String s = input.readStringRequireUtf8();
 
               souceNodeIp_ = s;
+              break;
+            }
+            case 32: {
+
+              numOfChunk_ = input.readInt32();
               break;
             }
             default: {
@@ -15144,6 +15218,15 @@ public final class StorageMessages {
       }
     }
 
+    public static final int NUMOFCHUNK_FIELD_NUMBER = 4;
+    private int numOfChunk_;
+    /**
+     * <code>int32 numOfChunk = 4;</code>
+     */
+    public int getNumOfChunk() {
+      return numOfChunk_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -15167,6 +15250,9 @@ public final class StorageMessages {
       if (!getSouceNodeIpBytes().isEmpty()) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 3, souceNodeIp_);
       }
+      if (numOfChunk_ != 0) {
+        output.writeInt32(4, numOfChunk_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -15185,6 +15271,10 @@ public final class StorageMessages {
       }
       if (!getSouceNodeIpBytes().isEmpty()) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(3, souceNodeIp_);
+      }
+      if (numOfChunk_ != 0) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(4, numOfChunk_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -15208,6 +15298,8 @@ public final class StorageMessages {
           .equals(other.getChunkName());
       result = result && getSouceNodeIp()
           .equals(other.getSouceNodeIp());
+      result = result && (getNumOfChunk()
+          == other.getNumOfChunk());
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -15225,6 +15317,8 @@ public final class StorageMessages {
       hash = (53 * hash) + getChunkName().hashCode();
       hash = (37 * hash) + SOUCENODEIP_FIELD_NUMBER;
       hash = (53 * hash) + getSouceNodeIp().hashCode();
+      hash = (37 * hash) + NUMOFCHUNK_FIELD_NUMBER;
+      hash = (53 * hash) + getNumOfChunk();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -15364,6 +15458,8 @@ public final class StorageMessages {
 
         souceNodeIp_ = "";
 
+        numOfChunk_ = 0;
+
         return this;
       }
 
@@ -15393,6 +15489,7 @@ public final class StorageMessages {
         result.failNodeId_ = failNodeId_;
         result.chunkName_ = chunkName_;
         result.souceNodeIp_ = souceNodeIp_;
+        result.numOfChunk_ = numOfChunk_;
         onBuilt();
         return result;
       }
@@ -15451,6 +15548,9 @@ public final class StorageMessages {
         if (!other.getSouceNodeIp().isEmpty()) {
           souceNodeIp_ = other.souceNodeIp_;
           onChanged();
+        }
+        if (other.getNumOfChunk() != 0) {
+          setNumOfChunk(other.getNumOfChunk());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -15641,6 +15741,32 @@ public final class StorageMessages {
   checkByteStringIsUtf8(value);
         
         souceNodeIp_ = value;
+        onChanged();
+        return this;
+      }
+
+      private int numOfChunk_ ;
+      /**
+       * <code>int32 numOfChunk = 4;</code>
+       */
+      public int getNumOfChunk() {
+        return numOfChunk_;
+      }
+      /**
+       * <code>int32 numOfChunk = 4;</code>
+       */
+      public Builder setNumOfChunk(int value) {
+        
+        numOfChunk_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>int32 numOfChunk = 4;</code>
+       */
+      public Builder clearNumOfChunk() {
+        
+        numOfChunk_ = 0;
         onChanged();
         return this;
       }
@@ -19040,21 +19166,22 @@ public final class StorageMessages {
       " \001(\t\022\022\n\nspaceBegin\030\002 \001(\005\022\020\n\010spaceEnd\030\003 \001" +
       "(\005\"0\n\rNodeFilesList\022\037\n\nstoreChunk\030\001 \003(\0132" +
       "\013.StoreChunk\"7\n\016ReturnPosition\022\016\n\006nodeId" +
-      "\030\001 \001(\005\022\025\n\rtoStoreNodeIp\030\002 \001(\t\"=\n\023UpdateA" +
+      "\030\001 \001(\005\022\025\n\rtoStoreNodeIp\030\002 \001(\t\"Q\n\023UpdateA" +
       "llFilesTable\022\026\n\016inputFileChunk\030\001 \001(\t\022\016\n\006" +
-      "nodeId\030\002 \001(\005\"\347\001\n\014ResChunksPos\022/\n\tChunksP" +
-      "os\030\001 \003(\0132\034.ResChunksPos.ChunksPosEntry\0223" +
-      "\n\013NodeIpTable\030\002 \003(\0132\036.ResChunksPos.NodeI" +
-      "pTableEntry\032=\n\016ChunksPosEntry\022\013\n\003key\030\001 \001" +
-      "(\t\022\032\n\005value\030\002 \001(\0132\013.NodeIdList:\0028\001\0322\n\020No" +
-      "deIpTableEntry\022\013\n\003key\030\001 \001(\005\022\r\n\005value\030\002 \001" +
-      "(\t:\0028\001\"\034\n\nNodeIdList\022\016\n\006nodeId\030\001 \003(\005\"\227\001\n" +
-      "\014RetrieveFile\022\026\n\016resChunkStatus\030\001 \001(\t\022\026\n" +
-      "\014askChunksPos\030\002 \001(\tH\000\022%\n\014resChunksPos\030\003 " +
-      "\001(\0132\r.ResChunksPosH\000\022$\n\rretrieveChunk\030\004 " +
-      "\001(\0132\013.StoreChunkH\000B\n\n\010function\"H\n\nRemove" +
-      "Node\022\022\n\nfailNodeId\030\001 \001(\005\022\021\n\tchunkName\030\002 " +
-      "\001(\t\022\023\n\013souceNodeIp\030\003 \001(\t\"\336\003\n\014ProtoWrappe" +
+      "nodeId\030\002 \001(\005\022\022\n\nnumOfChunk\030\003 \001(\005\"\347\001\n\014Res" +
+      "ChunksPos\022/\n\tChunksPos\030\001 \003(\0132\034.ResChunks" +
+      "Pos.ChunksPosEntry\0223\n\013NodeIpTable\030\002 \003(\0132" +
+      "\036.ResChunksPos.NodeIpTableEntry\032=\n\016Chunk" +
+      "sPosEntry\022\013\n\003key\030\001 \001(\t\022\032\n\005value\030\002 \001(\0132\013." +
+      "NodeIdList:\0028\001\0322\n\020NodeIpTableEntry\022\013\n\003ke" +
+      "y\030\001 \001(\005\022\r\n\005value\030\002 \001(\t:\0028\001\"\034\n\nNodeIdList" +
+      "\022\016\n\006nodeId\030\001 \003(\005\"\227\001\n\014RetrieveFile\022\026\n\016res" +
+      "ChunkStatus\030\001 \001(\t\022\026\n\014askChunksPos\030\002 \001(\tH" +
+      "\000\022%\n\014resChunksPos\030\003 \001(\0132\r.ResChunksPosH\000" +
+      "\022$\n\rretrieveChunk\030\004 \001(\0132\013.StoreChunkH\000B\n" +
+      "\n\010function\"\\\n\nRemoveNode\022\022\n\nfailNodeId\030\001" +
+      " \001(\005\022\021\n\tchunkName\030\002 \001(\t\022\023\n\013souceNodeIp\030\003" +
+      " \001(\t\022\022\n\nnumOfChunk\030\004 \001(\005\"\336\003\n\014ProtoWrappe" +
       "r\022\021\n\trequestor\030\001 \001(\t\022\n\n\002ip\030\002 \001(\t\022\024\n\014remo" +
       "veNodeId\030\r \001(\005\022\020\n\010response\030\016 \001(\t\022\021\n\007addN" +
       "ode\030\003 \001(\tH\000\022!\n\nremoveNode\030\004 \001(\0132\013.Remove" +
@@ -19176,7 +19303,7 @@ public final class StorageMessages {
     internal_static_UpdateAllFilesTable_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_UpdateAllFilesTable_descriptor,
-        new java.lang.String[] { "InputFileChunk", "NodeId", });
+        new java.lang.String[] { "InputFileChunk", "NodeId", "NumOfChunk", });
     internal_static_ResChunksPos_descriptor =
       getDescriptor().getMessageTypes().get(15);
     internal_static_ResChunksPos_fieldAccessorTable = new
@@ -19212,7 +19339,7 @@ public final class StorageMessages {
     internal_static_RemoveNode_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_RemoveNode_descriptor,
-        new java.lang.String[] { "FailNodeId", "ChunkName", "SouceNodeIp", });
+        new java.lang.String[] { "FailNodeId", "ChunkName", "SouceNodeIp", "NumOfChunk", });
     internal_static_ProtoWrapper_descriptor =
       getDescriptor().getMessageTypes().get(19);
     internal_static_ProtoWrapper_fieldAccessorTable = new

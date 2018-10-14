@@ -317,6 +317,7 @@ public class CoorSocketTask implements Runnable {
              sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), false, snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
 
         }
+        log.info(sn.toString());
         coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
     }
 

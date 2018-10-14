@@ -61,7 +61,7 @@ public class MoveFileTask implements Runnable {
     }
 
     /**
-     * Socket close
+     *
      * @param socket
      */
     private void quit(Socket socket){

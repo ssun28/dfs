@@ -832,7 +832,7 @@ public class SnSocketTask implements Runnable{
     }
 
     /**
-     * Update the allFilesTable on the other storage node
+     * Update the all f
      */
     public class UpdateFilesTableTask implements Runnable {
 
@@ -877,5 +877,4 @@ public class SnSocketTask implements Runnable{
             }
         }
     }
-
 }

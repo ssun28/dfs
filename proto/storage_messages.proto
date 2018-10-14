@@ -90,6 +90,7 @@ message ReturnPosition {
 message UpdateAllFilesTable {
     string inputFileChunk = 1;
     int32 nodeId = 2;
+    int32 numOfChunk = 3;
 }
 
 message ResChunksPos {
@@ -114,6 +115,7 @@ message RemoveNode {
     int32 failNodeId = 1;
     string chunkName = 2;
     string souceNodeIp = 3;
+    int32 numOfChunk = 4;
 }
 
 message ProtoWrapper {
