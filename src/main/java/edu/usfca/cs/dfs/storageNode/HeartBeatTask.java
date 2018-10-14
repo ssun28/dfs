@@ -2,24 +2,20 @@ package edu.usfca.cs.dfs.storageNode;
 
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.coordinator.Coordinator;
-import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
 import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
-import java.text.DecimalFormat;
-import java.util.Map;
 import java.util.Scanner;
 
 /**
- *
+ * HeartBeatTask class: add node to the hash ring, routing table and
+ * heartbeat with the coordinator.
+ * If the coordinator goes down, reconnect with the coordinator when it comes back
  */
 public class HeartBeatTask extends Thread{
 
-//    public static final int PORT = 37000;
-//    private static final double  GIGABYTES = 1024 * 1024 * 1024;
-//    private static DecimalFormat df2 = new DecimalFormat(".##");
     private static final long CHECK_DELAY = 10;
     private static final long KEEP_ALIVE = 5000;
 
@@ -42,6 +38,11 @@ public class HeartBeatTask extends Thread{
         log = Logger.getLogger(HeartBeatTask.class);
     }
 
+    /**
+     * Main run:
+     * Connect to the coordinator, add to the hash ring, routing table
+     * and heartbeat with the coordinator
+     */
     @Override
     public void run() {
         connectCoordinator();
@@ -49,6 +50,9 @@ public class HeartBeatTask extends Thread{
         heartBeat();
     }
 
+    /**
+     * Connect to the coordinator
+     */
     private void connectCoordinator() {
         while(!isConnectedCoor) {
             System.out.print("Enter the coordinator's IP address : ");
@@ -67,6 +71,10 @@ public class HeartBeatTask extends Thread{
         }
     }
 
+    /**
+     * Establish connection with the coordinator
+     * @return
+     */
     private boolean establishConnection() {
         try {
             hbSocket = new Socket();
@@ -96,20 +104,15 @@ public class HeartBeatTask extends Thread{
                     .setIp(stMetaData.getStorageNodeInfo().getNodeIp())
                     .setAddNode("true")
                     .build();
-            // protocol
 
             protoWrapperOut.writeDelimitedTo(hbSocket.getOutputStream());
 
-//            StorageMessages.ProtoWrapper protoWrapperIn
-//                    = StorageMessages.ProtoWrapper.parseDelimitedFrom(hbSocket.getInputStream());
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     hbSocket.getInputStream());
             int nodeId = Integer.parseInt(protoWrapperIn.getAddNode());
-            System.out.println("nodeId = " + nodeId);
+
             stMetaData.getStorageNodeInfo().setNodeId(nodeId);
             stMetaData.getStorageNodeInfo().setActive(true);
-//            stMetaData.getStorageNodeInfo().setSpaceCap(Double.parseDouble(df2.format(new File("/")
-//                    .getUsableSpace()/ GIGABYTES)));
 
             File dirFile = new File(SnSocketTask.DIR);
 
@@ -133,14 +136,11 @@ public class HeartBeatTask extends Thread{
      * get back new routing table back if it is updated
      */
     private void heartBeat() {
-//        long checkDelay = 10;
-//        long keepAlive = 5000;
         long lastSendTime = System.currentTimeMillis();
 
         StorageMessages.StorageNodeInfo storageNodeInfoMsgOut;
         StorageMessages.Heartbeat heartbeatMsgOut;
         StorageMessages.ProtoWrapper protoWrapperOut;
-
 
         while(true) {
             if(System.currentTimeMillis() - lastSendTime > KEEP_ALIVE) {
@@ -185,10 +185,6 @@ public class HeartBeatTask extends Thread{
                     int[] rangeArray = stMetaData.getRoutingTable().get(stMetaData.getStorageNodeInfo().getNodeId()).getSpaceRange();
                     log.info("Hash Space Range: " + rangeArray[0] + "~" + rangeArray[1]);
 
-//                    log.info("Current Routing table");
-//                    for(Map.Entry<Integer, StorageNodeHashSpace> e : stMetaData.getRoutingTable().entrySet()){
-//                        log.info(e.getKey() + "    " + e.getValue().toString());
-//                    }
                 } catch (SocketException e) {
                     reConnectCoor();
                 } catch (NullPointerException e) {
@@ -203,10 +199,12 @@ public class HeartBeatTask extends Thread{
                     e.printStackTrace();
                 }
             }
-
         }
     }
 
+    /**
+     * If the coordinator goes down, reconnect with the coordinator
+     */
     private void reConnectCoor(){
         log.info("Waiting for the coordinator coming back");
         while(!establishConnection()){
@@ -222,8 +220,6 @@ public class HeartBeatTask extends Thread{
         if(stMetaData.getRoutingTable().get(nodeId) == null){
             System.out.println("sopace range null");
         }
-
-
 
         StorageMessages.StorageNodeHashSpace shMsgOut =
                 StorageMessages.StorageNodeHashSpace.newBuilder()
@@ -245,22 +241,17 @@ public class HeartBeatTask extends Thread{
                         .setRecorveryNodeInfo(routingEleMsgOut)
                         .build();
 
-
         try {
             protoWrapperOut.writeDelimitedTo(hbSocket.getOutputStream());
         } catch (IOException e1) {
             e1.printStackTrace();
         }
-        heartBeat();
-    }
 
-    public double getRtVerstion() {
-        return rtVerstion;
+        heartBeat();
     }
 
     public void setRtVerstion(double rtVerstion) {
         this.rtVerstion = rtVerstion;
     }
-
 
 }

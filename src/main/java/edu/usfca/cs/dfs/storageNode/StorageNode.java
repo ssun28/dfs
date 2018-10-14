@@ -1,11 +1,9 @@
 package edu.usfca.cs.dfs.storageNode;
 
-import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -14,7 +12,6 @@ import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,8 +25,9 @@ public class StorageNode {
 
     public static final String HASH_ALGORITHM_SHA1 = "SHA1";
     public static final String DIR = "/bigdata/ssun28/";
-    private static final int NTHREADS = 20;
     public static final int PORT = 37100;
+
+    private static final int NTHREADS = 20;
 
     private ExecutorService executorService;
     private ServerSocket serverSocket = null;
@@ -55,9 +53,7 @@ public class StorageNode {
         this.stMetaData = new StMetaData(routingTable, allFilesPosTable, numOfChunksTable, storageNodeInfo, chunksMap);
         this.requestsNum = 0;
         this.log = Logger.getLogger(StorageNode.class);
-//        if(!createDirectory()){
-//            System.out.println("Creating Directory failed!!");
-//        }
+
         try {
             executorService = Executors.newFixedThreadPool(NTHREADS);
 //            serverSocket = new ServerSocket(Coordinator.PORT);
@@ -66,14 +62,6 @@ public class StorageNode {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private boolean createDirectory() {
-        File dirFile = new File(DIR);
-        if(!dirFile.exists()){
-            return dirFile.mkdir();
-        }
-        return true;
     }
 
     /**
@@ -132,4 +120,5 @@ public class StorageNode {
         StorageNode storageNode = new StorageNode();
         storageNode.start();
     }
+
 }

@@ -4,7 +4,6 @@ import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
 import edu.usfca.cs.dfs.client.Client;
 import edu.usfca.cs.dfs.client.RetrieveChunkTask;
-import edu.usfca.cs.dfs.storageNode.MoveFileTask;
 import edu.usfca.cs.dfs.coordinator.StorageNodeHashSpace;
 import org.apache.log4j.Logger;
 
@@ -18,19 +17,21 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * SnSocketTask class: accept different kind requests from client and
+ * other storage nodes
+ */
 public class SnSocketTask implements Runnable{
 
     public static final String STORAGENODE = "storageNode";
     public static final String COORDINATOR = "coordinator";
     public static final String CLIENT = "client";
     public static final String DIR = "/bigdata/ssun28/";
-    private static final int CHUNKSIZE = 8000000;
+
     private static final int PORT = 37100;
     private static final int NTHREADS = 20;
 
@@ -48,6 +49,9 @@ public class SnSocketTask implements Runnable{
         log = Logger.getLogger(SnSocketTask.class);
     }
 
+    /**
+     * Main run:
+     */
     @Override
     public void run() {
         try {
@@ -122,19 +126,17 @@ public class SnSocketTask implements Runnable{
                 nodeFilesList();
                 quit();
                 break;
-
             case "PRINTALLFILESTABLE":
                 printAllFilesTable();
                 quit();
                 break;
-
-
-
-
             default: break;
         }
     }
 
+    /**
+     * Print all files table for test
+     */
     private void printAllFilesTable() {
         Hashtable<String, ArrayList<Integer>> allFilesPosTable = stMetaData.getAllFilesPosTable();
         System.out.println("Here is the all files pos table ! ########");
@@ -160,16 +162,12 @@ public class SnSocketTask implements Runnable{
             byte[] bytes = mDigest.digest(fileNameWithType.getBytes());
             int hash16bits = bytesToInt(bytes);
 
-//            log.info(fileNameWithType + "'s checkSum code is " + Integer.toHexString(hash16bits));
-
-
             ArrayList<Integer> nodeIdList = stMetaData.getNodeIdList();
             Collections.sort(nodeIdList);
             int nodesNum = nodeIdList.size();
             int pieceSize = ((int)Math.pow(2, 16) / nodesNum);
             System.out.println("piece size is" + pieceSize);
             int result = hash16bits / pieceSize;
-
             int nodeId = nodeIdList.get(result);
 
             log.info(fileNameWithType +" will store on node " + result + "-----" + nodeId);
@@ -273,7 +271,6 @@ public class SnSocketTask implements Runnable{
             e.printStackTrace();
         }
 
-
         log.info(fileName + " has " + numChunks +" chunks");
         stMetaData.updateNumOfChunks(fileName, fileType, numChunks);
 
@@ -299,7 +296,6 @@ public class SnSocketTask implements Runnable{
                 int[] nodeIdArray = stMetaData.get2ChunkCopyNodeId(stMetaData.getStorageNodeInfo().getNodeId());
                 for(int i = 0; i < nodeIdArray.length; i++) {
 
-                    //////if socket failed
                     Socket copyChunkSocket = new Socket();
                     String copyChunkNodeIp = stMetaData.getRoutingTable().get(nodeIdArray[i]).getNodeIp();
                     InetAddress serverIP = InetAddress.getByName(copyChunkNodeIp);
@@ -336,13 +332,6 @@ public class SnSocketTask implements Runnable{
             }
 
             updateOthersAllFilesPosTable(inputFileChunk, nodeId);
-
-            for(int i : nodeIdSetSuccess){
-                log.info("one of the back up is stored on " + i);
-            }
-//            for(Integer i : nodeIdSetSuccess) {
-//                stMetaData.updateAllFilesPosTable(inputFileChunk, i);
-//            }
 
             return true;
         } catch (UnknownHostException e) {
@@ -411,15 +400,12 @@ public class SnSocketTask implements Runnable{
         String fileType = "";
         String fileNameWithType = retrieveFileMsgIn.getAskChunksPos();
 
-
         if(fileNameWithType.contains(".")) {
             fileName = fileNameWithType.split("\\.")[0];
             fileType = "." + fileNameWithType.split("\\.")[1];
         }else {
             fileName = fileNameWithType;
         }
-
-        log.info("Client is asking the chunk pos of "+ fileNameWithType);
 
         int numOfChunks = stMetaData.getNumOfChunksTable().get(fileNameWithType);
         log.info(fileName + " has " + numOfChunks +" chunks");
@@ -430,7 +416,6 @@ public class SnSocketTask implements Runnable{
             StorageMessages.NodeIdList list = stMetaData.getRetrieveChunksPos(chunkName);
             retrieveChunksPosTable.put(chunkName, list);
         }
-
 
         Hashtable<Integer, String> nodeIpTable = stMetaData.getNodeIpTable();
 
@@ -469,11 +454,8 @@ public class SnSocketTask implements Runnable{
 
         Chunk chunk = stMetaData.getChunk(chunkName);
 
-        StorageMessages.RetrieveFile retrieveFileMsgOut = null;
-        StorageMessages.StoreChunk retrieveChunkMsgOut = null;
         try {
-    //        if(chunk != null) {
-    //            byte[] bytes= readFromDisk(fileName, chunkId, fileType, chunk.getSize());
+
             byte[] bytes= readFromDisk(chunkName, Client.CHUNKSIZE);
             if(bytes != null) {
 
@@ -501,30 +483,22 @@ public class SnSocketTask implements Runnable{
 
                 log.error("The original file has been deleted!!");
                 getCopy(chunkName, chunk, retrieveFileMsgIn);
-//                retrieveFileMsgOut =
-//                        StorageMessages.RetrieveFile.newBuilder()
-//                        .setResChunkStatus("false")
-//                        .build();
-//                protoWrapperOut =
-//                        StorageMessages.ProtoWrapper.newBuilder()
-//                                .setRequestor(STORAGENODE)
-//                                .setIp(oriNodeIp)
-//                                .setRetrieveFile(retrieveFileMsgOut)
-//                                .build();
-//                protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
-
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Get the chunk copy from other node if the copy on the disk is lost or corrupted
+     * @param chunkName
+     * @param chunk
+     * @param retrieveFileMsgIn
+     */
     private void getCopy(String chunkName, Chunk chunk, StorageMessages.RetrieveFile retrieveFileMsgIn) {
-
         int nodeId = getNextNode(chunkName, stMetaData.getStorageNodeInfo().getNodeId());
         String nodeIp = stMetaData.getRoutingTable().get(nodeId).getNodeIp();
         Hashtable<Integer, byte[]> chunkTable = new Hashtable<>();
-        Hashtable<String, Chunk> chunksMap = new Hashtable<>();
         Runnable r = new RetrieveChunkTask(chunkName, nodeId, nodeIp, oriNodeIp, chunkTable);
         r.run();
 
@@ -533,6 +507,13 @@ public class SnSocketTask implements Runnable{
         retrieveChunk(retrieveFileMsgIn);
     }
 
+    /**
+     * Write the new file chunk on the disk
+     * @param table
+     * @param chunkId
+     * @param chunkName
+     * @param size
+     */
     private void setNewFile(Hashtable<Integer, byte[]> table, int chunkId, String chunkName, int size) {
         File file = new File(DIR + chunkName);
 
@@ -546,10 +527,14 @@ public class SnSocketTask implements Runnable{
         } catch(IOException e){
             e.printStackTrace();
         }
-
     }
 
-
+    /**
+     * Get the next node id stores the same chunkName
+     * @param chunkName
+     * @param nodeId
+     * @return
+     */
     private int getNextNode(String chunkName, int nodeId) {
         ArrayList<Integer> idList = stMetaData.getFilePos(chunkName);
         int nextId = nodeId;
@@ -560,7 +545,6 @@ public class SnSocketTask implements Runnable{
         }
         return nextId;
     }
-
 
     /**
      * Construct a retrieveChunkMsgOut protoWrapper
@@ -597,6 +581,12 @@ public class SnSocketTask implements Runnable{
         }
     }
 
+    /**
+     * Read bytes from the file stored on disk
+     * @param inputFile
+     * @param chunkSize
+     * @return
+     */
     private byte[] readFromDisk(String inputFile, int chunkSize) {
         File f = new File(DIR + inputFile);
         byte[] data = new byte[chunkSize];
@@ -609,7 +599,7 @@ public class SnSocketTask implements Runnable{
         }
     }
 
-        /**
+    /**
      * Get nodeFiles list from chunks list
      */
     private void nodeFilesList() {
@@ -632,7 +622,6 @@ public class SnSocketTask implements Runnable{
                             .setIp(oriNodeIp)
                             .setAskInfo(askInfoMsgOut)
                             .build();
-
 
             protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
         } catch (IOException e) {
@@ -661,17 +650,18 @@ public class SnSocketTask implements Runnable{
         quit();
     }
 
+    /**
+     * Copy the chunk from one of the two other replica, which cause by a node failed
+     */
     private void moveFile() {
         StorageMessages.RemoveNode removeNodeMsgIn= protoWrapperIn.getRemoveNode();
         int failNodeId = removeNodeMsgIn.getFailNodeId();
         String chunkName = removeNodeMsgIn.getChunkName();
         String sourceNodeIp = removeNodeMsgIn.getSouceNodeIp();
         Hashtable<Integer, byte[]> newFile = new Hashtable<>();
-        Hashtable<String, Chunk> chunksMap = new Hashtable<>();
         RetrieveChunkTask retrieveChunkTask = new RetrieveChunkTask(chunkName, -1, sourceNodeIp, "", newFile);
         retrieveChunkTask.run();
         File file = new File(DIR + chunkName);
-
 
         Chunk chunk = retrieveChunkTask.getChunk();
         for(Map.Entry<Integer, byte[]> f: newFile.entrySet()) {
@@ -681,14 +671,11 @@ public class SnSocketTask implements Runnable{
                 e.printStackTrace();
             }
         }
-
-
         stMetaData.filesOnFailNode(failNodeId);
 
         stMetaData.addChunkToChunksMap(chunkName, chunk);
         stMetaData.updateAllFilesPosTable(chunkName, stMetaData.getStorageNodeInfo().getNodeId());
         updateOthersAllFilesPosTable(chunkName, stMetaData.getStorageNodeInfo().getNodeId());
-
     }
 
     /**
@@ -735,7 +722,6 @@ public class SnSocketTask implements Runnable{
             stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
             System.out.println("Store " + inputFileChunk + " Successfully!");
 
-
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
                     .setRequestor(STORAGENODE)
@@ -744,11 +730,7 @@ public class SnSocketTask implements Runnable{
                     .build();
 
             protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
-//            String inputFileChunk = fileName + "_" + chunkId + fileType;
-//            int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
-//            stMetaData.updateAllFilesPosTable(inputFileChunk, nodeId);
             updateOthersAllFilesPosTable(inputFileChunk, nodeId);
-            System.out.println("Store " + fileName + "_" + chunkId + fileType + " Successfully!");
         } catch (IOException e) {
             System.out.println("Store " + fileName + "_" + chunkId + fileType + " Failed!");
             e.printStackTrace();
@@ -775,20 +757,25 @@ public class SnSocketTask implements Runnable{
             executorService.execute(new UpdateFilesTableTask(oriNodeIp, desNodeIp, inputFileChunk, nodeId));
         }
         executorService.shutdown();
-
     }
 
+    /**
+     * Find all the chunk files store on the failed storage node
+     */
     private void failNodeFilesSearch() {
         StorageMessages.RemoveNode removeNodeMsgIn = protoWrapperIn.getRemoveNode();
         int failNodeId = removeNodeMsgIn.getFailNodeId();
         stMetaData.removeFailNode(failNodeId);
 
-
         Hashtable<String, ArrayList<Integer>> filesOnFailNodeTable = stMetaData.filesOnFailNode(failNodeId);
         assignTaskToNode(filesOnFailNodeTable, failNodeId);
     }
 
-
+    /**
+     * Let each of dest node to back up the copy from souceIp, which stores one of the other two replica
+     * @param filesOnFailNodeTable
+     * @param failNodeId
+     */
     private void assignTaskToNode(Hashtable<String, ArrayList<Integer>> filesOnFailNodeTable, int failNodeId){
         int numOfNode = stMetaData.getRoutingTable().size();
         System.out.println(filesOnFailNodeTable.size() + " / " + numOfNode);
@@ -797,7 +784,6 @@ public class SnSocketTask implements Runnable{
         log.info("Each node should get "+ numOfFilesToMove +" files ");
 
         ArrayList<Integer> nodeIdList = stMetaData.getNodeIdList();
-
 
         ExecutorService executorService = Executors.newFixedThreadPool(NTHREADS);
         int[] numOfFiles = new int[nodeIdList.size()];
@@ -821,6 +807,7 @@ public class SnSocketTask implements Runnable{
 
             String destNodeIp = routingTable.get(nodeId).getNodeIp();
             String sourceNodeIp = routingTable.get(sourceNodeId).getNodeIp();
+
             // new task
             MoveFileTask task = new MoveFileTask(e.getKey(), destNodeIp, sourceNodeIp, failNodeId);
             executorService.execute(task);
@@ -834,14 +821,6 @@ public class SnSocketTask implements Runnable{
             nodeIndex = nodeIndex % nodeIdList.size();
         }
 
-
-
-    }
-
-    private String getLocalDataTime() {
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-        LocalDateTime now = LocalDateTime.now();
-        return dtf.format(now);
     }
 
     private void quit() {
@@ -852,7 +831,9 @@ public class SnSocketTask implements Runnable{
         }
     }
 
-    ///what if connect failed
+    /**
+     * Update the allFilesTable on the other storage node
+     */
     public class UpdateFilesTableTask implements Runnable {
 
         private Socket socket;
@@ -896,4 +877,5 @@ public class SnSocketTask implements Runnable{
             }
         }
     }
+
 }

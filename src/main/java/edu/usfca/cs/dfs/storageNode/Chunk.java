@@ -27,48 +27,24 @@ public class Chunk {
         return fileName;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
     public int getChunkId() {
         return chunkId;
-    }
-
-    public void setChunkId(int chunkId) {
-        this.chunkId = chunkId;
     }
 
     public String getFileType() {
         return fileType;
     }
 
-    public void setFileType(String fileType) {
-        this.fileType = fileType;
-    }
-
     public int getNumChunks() {
         return numChunks;
-    }
-
-    public void setNumChunks(int numChunks) {
-        this.numChunks = numChunks;
     }
 
     public int getSize() {
         return size;
     }
 
-    public void setSize(int size) {
-        this.size = size;
-    }
-
     public String getCheckSum() {
         return checkSum;
-    }
-
-    public void setCheckSum(String checkSum) {
-        this.checkSum = checkSum;
     }
 
     @Override

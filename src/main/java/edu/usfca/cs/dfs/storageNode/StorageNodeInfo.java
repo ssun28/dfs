@@ -60,10 +60,6 @@ public class StorageNodeInfo {
         return spaceCap;
     }
 
-    public synchronized void setSpaceCap(double spaceCap) {
-        this.spaceCap = spaceCap;
-    }
-
     public synchronized int getRequestsNum() {
         return requestsNum;
     }

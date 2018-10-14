@@ -8,13 +8,16 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+/**
+ * MoveFileTask: send requests to other storage node, let them know which nodes has failed,
+ * and ask each of dest node to back up the copy from souceIp, which stores one of the other two replica
+ */
 public class MoveFileTask implements Runnable {
 
     private String chunkName;
     private String destIp;
     private String sourceIp;
     private int failNodeId;
-
 
     public MoveFileTask(String chunkName, String destIp, String sourceIp, int failNodeId) {
         this.chunkName = chunkName;
@@ -24,7 +27,7 @@ public class MoveFileTask implements Runnable {
     }
 
     /**
-     *
+     * Main run:
      */
     @Override
     public void run() {
@@ -57,6 +60,10 @@ public class MoveFileTask implements Runnable {
         }
     }
 
+    /**
+     * Socket close
+     * @param socket
+     */
     private void quit(Socket socket){
         try {
             socket.close();

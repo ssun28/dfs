@@ -19,7 +19,6 @@ public class StMetaData {
     private Hashtable<String, ArrayList<Integer>> allFilesPosTable;
     private Hashtable<String, Integer> numOfChunksTable;
     private StorageNodeInfo storageNodeInfo;
-//    private ArrayList<Chunk> chunksList;
     private Hashtable<String, Chunk> chunksMap;
 
     public StMetaData(Hashtable<Integer, StorageNodeHashSpace> routingTable,
@@ -36,10 +35,6 @@ public class StMetaData {
 
     public synchronized Hashtable<Integer, StorageNodeHashSpace> getRoutingTable() {
         return routingTable;
-    }
-
-    public void setRoutingTable(Hashtable<Integer, StorageNodeHashSpace> routingTable) {
-        this.routingTable = routingTable;
     }
 
     /**
@@ -98,7 +93,6 @@ public class StMetaData {
                 break;
             }
         }
-
         return nodeIdArray;
     }
 
@@ -118,10 +112,6 @@ public class StMetaData {
 
     public Hashtable<String, ArrayList<Integer>> getAllFilesPosTable() {
         return allFilesPosTable;
-    }
-
-    public void setAllFilesPosTable(Hashtable<String, ArrayList<Integer>> allFilesPosTable) {
-        this.allFilesPosTable = allFilesPosTable;
     }
 
     /**
@@ -158,6 +148,11 @@ public class StMetaData {
         return nodeIdListMsg;
     }
 
+    /**
+     * Get chunk positions
+     * @param chunkName
+     * @return
+     */
     public synchronized ArrayList<Integer> getFilePos(String chunkName){
         for(int i : allFilesPosTable.get(chunkName)){
             if(!routingTable.containsKey(i)) {
@@ -190,14 +185,6 @@ public class StMetaData {
         return storageNodeInfo;
     }
 
-    public void setStorageNodeInfo(StorageNodeInfo storageNodeInfo) {
-        this.storageNodeInfo = storageNodeInfo;
-    }
-
-    public synchronized Hashtable<String, Chunk> getChunksMap() {
-        return chunksMap;
-    }
-
     /**
      * Get a files list store on the node
      * @return
@@ -205,7 +192,6 @@ public class StMetaData {
     public synchronized ArrayList<StorageMessages.StoreChunk> getNodeFilesList() {
         ArrayList<StorageMessages.StoreChunk> nodeFilesList = new ArrayList<>();
         for(Chunk c : chunksMap.values()) {
-            System.out.println(c.toString());
             StorageMessages.StoreChunk storeChunkMsg =
                     StorageMessages.StoreChunk.newBuilder()
                     .setFileName(c.getFileName())
@@ -217,7 +203,6 @@ public class StMetaData {
 
             nodeFilesList.add(storeChunkMsg);
         }
-
         return nodeFilesList;
     }
 
@@ -230,10 +215,6 @@ public class StMetaData {
         return chunksMap.get(chunkName);
     }
 
-    public void setChunksMap(Hashtable<String, Chunk> chunksMap) {
-        this.chunksMap = chunksMap;
-    }
-
     public synchronized void addChunkToChunksMap(String chunkName, Chunk chunk) {
         chunksMap.put(chunkName, chunk);
     }
@@ -242,10 +223,11 @@ public class StMetaData {
         return numOfChunksTable;
     }
 
-    public void setNumOfChunksTable(Hashtable<String, Integer> numOfChunksTable) {
-        this.numOfChunksTable = numOfChunksTable;
-    }
-
+    /**
+     * Get a table contains all the files store on the failed node
+     * @param failNodeId
+     * @return
+     */
     public synchronized Hashtable<String, ArrayList<Integer>> filesOnFailNode(int failNodeId) {
         Hashtable<String, ArrayList<Integer>> result = new Hashtable<>();
         for(Map.Entry<String, ArrayList<Integer>> chunk : allFilesPosTable.entrySet()) {
@@ -258,7 +240,6 @@ public class StMetaData {
         }
         return result;
     }
-
 
     public synchronized void removeFailNode(int nodeId){
         if(routingTable.containsKey(nodeId)){
