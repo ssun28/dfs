@@ -1,8 +1,6 @@
 package edu.usfca.cs.dfs.client;
 
-import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
-import edu.usfca.cs.dfs.coordinator.CoorMetaData;
 import edu.usfca.cs.dfs.coordinator.Coordinator;
 import edu.usfca.cs.dfs.storageNode.StorageNode;
 import org.apache.log4j.Logger;
@@ -14,8 +12,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.DecimalFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,8 +26,9 @@ import java.util.concurrent.TimeUnit;
 public class Client {
 
     public static final int CHUNKSIZE = 8000000;
-    private static final int NTHREADS = 20;
     public static final String CLIENT = "client";
+
+    private static final int NTHREADS = 20;
     private static final String STORAGENODE = "storageNode";
     private static final String COORDINATOR = "coordinator";
     private static DecimalFormat df2 = new DecimalFormat(".##");
@@ -110,7 +107,6 @@ public class Client {
 
         start();
     }
-
 
     /**
      * Print all files table for test

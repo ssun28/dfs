@@ -21,7 +21,6 @@ public class StoreChunkTask implements Runnable {
     private ClientMetaData clientMetaData;
     private int chunkId;
     private byte[] bytes;
-    private ByteString data;
     private int chunkSize;
     private String positionNodeIp;
     private static Logger log;
@@ -30,7 +29,6 @@ public class StoreChunkTask implements Runnable {
         this.clientMetaData = clientMetaData;
         this.chunkId = chunkId;
         this.bytes = bytes;
-//        this.data = data;
         this.chunkSize = chunkSize;
         log = Logger.getLogger(StoreChunkTask.class);
     }
@@ -92,8 +90,6 @@ public class StoreChunkTask implements Runnable {
             socket.connect(new InetSocketAddress(toStoreSnIP, StorageNode.PORT), 2000);
 
             String chunkCheckSum = toHex(bytes);
-
-//            ByteString data = ByteString.copyFrom(bytes, 0, chunkSize);
             ByteString data = ByteString.copyFrom(bytes, 0, Client.CHUNKSIZE);
 
             StorageMessages.StoreChunk storeChunkMsgOut
@@ -119,7 +115,6 @@ public class StoreChunkTask implements Runnable {
                     StorageMessages.ProtoWrapper.parseDelimitedFrom(
                             socket.getInputStream());
 
-//            socketCheckSumUntilSuccess(protoWrapperMsgIn, protoWrapperMsgOut, storeChunkMsgOut);
             while(!protoWrapperMsgIn.getResponse().equals("CheckSums equal")) {
                 storeChunkMsgOut
                         = StorageMessages.StoreChunk.newBuilder()
@@ -144,8 +139,6 @@ public class StoreChunkTask implements Runnable {
                 protoWrapperMsgIn =
                         StorageMessages.ProtoWrapper.parseDelimitedFrom(
                                 socket.getInputStream());
-                System.out.println("protoWrapperMsgIn.getResponse() = " + protoWrapperMsgIn.getResponse());
-
             }
             ///store successful or fail
             protoWrapperMsgIn =

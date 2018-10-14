@@ -29,11 +29,7 @@ public class RetrieveChunkTask implements Runnable {
     private StorageMessages.ProtoWrapper protoWrapperOut;
     private Hashtable<Integer, byte[]> chunkTable;
     private Chunk chunk;
-
-
-
     private static Logger log;
-
 
     public RetrieveChunkTask(String retrieveChunkName,
                              int nodeId,
@@ -91,8 +87,6 @@ public class RetrieveChunkTask implements Runnable {
             int numChunks = storeChunkMsgIn.getNumChunks();
             String fileType = storeChunkMsgIn.getFileType();
             String msgInCheckSum = storeChunkMsgIn.getChunkCheckSum();
-
-            String chunkName = fileName + "_" + chunkId + fileType;
 
             chunk = new Chunk(fileName, chunkId, fileType, numChunks, size, msgInCheckSum);
 
