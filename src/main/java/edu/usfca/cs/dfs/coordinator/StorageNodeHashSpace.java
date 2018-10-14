@@ -30,7 +30,6 @@ public class StorageNodeHashSpace {
         this.spaceRange = spaceRange;
     }
 
-
     @Override
     public String toString(){
         return nodeIp + "    " + "from   " + spaceRange[0] +"   to   " + spaceRange[1];

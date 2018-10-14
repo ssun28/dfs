@@ -1,7 +1,6 @@
 package edu.usfca.cs.dfs.coordinator;
 
 import edu.usfca.cs.dfs.StorageMessages;
-import edu.usfca.cs.dfs.storageNode.HeartBeatTask;
 import edu.usfca.cs.dfs.storageNode.SnSocketTask;
 import edu.usfca.cs.dfs.storageNode.StorageNode;
 
@@ -11,6 +10,10 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+/**
+ * MoveFileTask: tell one of the storage node which node failed
+ * in the system and let it assign retrieve tasks to other nodes
+ */
 public class MoveFileTask implements Runnable {
 
     private String nodeIp;
@@ -21,6 +24,10 @@ public class MoveFileTask implements Runnable {
         this.failNodeId = failNodeId;
     }
 
+    /**
+     * Main run:
+     * Send request to the storage node
+     */
     @Override
     public void run() {
         Socket socket = new Socket();
@@ -50,6 +57,10 @@ public class MoveFileTask implements Runnable {
         }
 }
 
+    /**
+     * Socket close
+     * @param socket
+     */
     private void quit(Socket socket){
         try {
             socket.close();

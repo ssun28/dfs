@@ -61,9 +61,7 @@ public class CoorMetaData {
 
             hashSpace.setSpaceRange(newSpaceRange);
             routingTable.put(nodeId, hashSpace);
-//            StorageNodeHashSpace newsnhs = new StorageNodeHashSpace(sn.getValue().getNodeIp(), newSpaceRange);
-//            routingTable.put(sn.getKey(), sn.setValue())
-//            routingTable.put(sn.getKey(), newsnhs);
+
         }
         routingTable.put(newNodeId, snhs);
     }
@@ -82,7 +80,6 @@ public class CoorMetaData {
                     .setSpaceEnd(s.getSpaceRange()[1]).build();
             mp.put(e.getKey(), sns);
         }
-
         return mp;
     }
 
@@ -110,7 +107,6 @@ public class CoorMetaData {
     public synchronized ArrayList<StorageMessages.ActiveNode> getActiveNodesList() {
         ArrayList<StorageMessages.ActiveNode> sa = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
-            System.out.println(sn.getNodeId() + " is :" + sn.isActive());
             if(sn.isActive()) {
                 StorageMessages.ActiveNode activeNodeMsg
                         = StorageMessages.ActiveNode.newBuilder()
@@ -163,10 +159,14 @@ public class CoorMetaData {
         return sr;
     }
 
+    /**
+     * Remove a fail node from routing table, update the metaDataTable
+     * and routing table version
+     * @param nodeId
+     */
     public synchronized void removeFailNode(int nodeId) {
         routingTable.remove(nodeId);
         metaDataTable.get(nodeId).setActive(false);
-        System.out.println("nodeId is active? " + metaDataTable.get(nodeId).isActive());
         setRtVersion(getRtVersion() + 0.1);
     }
 

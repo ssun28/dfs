@@ -62,11 +62,11 @@ public class CoorSocketTask implements Runnable {
             }
 
 
-            else if (requestor.equals(CLIENT) && removeNodeId >= 0) {
-//                int removeNodeId = protoWrapperIn.getRemoveNodeId();
-                log.error(removeNodeId +" is being removed");
-                removeNode(removeNodeId);
-            }
+//            else if (requestor.equals(CLIENT) && removeNodeId >= 0) {
+//                log.error(removeNodeId +" is being removed");
+//                removeNode(removeNodeId);
+//            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -204,8 +204,6 @@ public class CoorSocketTask implements Runnable {
 
         coorMetaData.addNodeToRoutingTable(totalNodeNum, newNodeId, snhs);
 
-        log.info("Node_" + newNodeId + " is allowed to add into the hash space!");
-        log.info("New hash space in coordinator");
         for(Map.Entry<Integer, StorageNodeHashSpace> e : coorMetaData.getRoutingTable().entrySet()){
             log.info(e.getKey() +"    "+ e.getValue().toString());
         }
@@ -228,6 +226,10 @@ public class CoorSocketTask implements Runnable {
         coorMetaData.setRtVersion(coorMetaData.getRtVersion() + 0.1);
     }
 
+    /**
+     * Recorvery the node Info from node
+     * update the routing table
+     */
     private void recorveryNodeInfo() {
         StorageMessages.RoutingEle routingEleMsgIn = protoWrapperIn.getRecorveryNodeInfo();
         StorageMessages.StorageNodeHashSpace storageNodeHashSpaceMsgIn = routingEleMsgIn.getStorageNodeHashSpace();
@@ -315,8 +317,6 @@ public class CoorSocketTask implements Runnable {
              sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), false, snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
 
         }
-
-        log.info(sn.toString());
         coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
     }
 
@@ -327,7 +327,6 @@ public class CoorSocketTask implements Runnable {
      */
     private StorageMessages.Heartbeat setHeartBeatMsgOut(StorageMessages.Heartbeat heartBeatInMsg){
         double rtVersion = heartBeatInMsg.getRtVersion();
-
 
         StorageMessages.Heartbeat heartBeatMsgOut;
 
@@ -347,10 +346,11 @@ public class CoorSocketTask implements Runnable {
         }
         return heartBeatMsgOut;
     }
-//    private void removeNodeRequest() {
-//        //removeNode();
-//    }
 
+    /**
+     * Reomove node from routing table
+     * @param nodeId
+     */
     private void removeNode(int nodeId){
         coorMetaData.removeFailNode(nodeId);
         log.info(nodeId +" has been removed from the routing table");
@@ -363,19 +363,24 @@ public class CoorSocketTask implements Runnable {
         }
     }
 
-
+    /**
+     * Find the files on the failed storage node and move those files to other
+     * storage node
+     * @param nodeId
+     * @param failNodeId
+     */
     private void moveFiles(int nodeId, int failNodeId){
         String nodeIp = coorMetaData.getRoutingTable().get(nodeId).getNodeIp();
-        log.info("Tell the other other node to move files by "+ nodeId + "=>" + nodeIp);
 
         Runnable r = new MoveFileTask(nodeIp, failNodeId);
         r.run();
     }
 
-
+    /**
+     * Socket close
+     */
     private void quit() {
         try {
-            log.info("Someone has quit!");
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();

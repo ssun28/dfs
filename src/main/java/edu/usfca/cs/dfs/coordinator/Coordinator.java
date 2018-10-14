@@ -25,16 +25,15 @@ import org.apache.log4j.PropertyConfigurator;
 public class Coordinator {
 
     public static final int PORT = 37000;
+
     private static final int NTHREADS = 20;
 
     private ExecutorService executorService;
     private ServerSocket serverSocket = null;
     private CoorMetaData coorMetaData;
-
     private boolean isStarted = true;
     private Hashtable<Integer, StorageNodeHashSpace> routingTable;
     private Hashtable<Integer, StorageNodeInfo> metaDataTable;
-    private static Logger log = Logger.getLogger(Coordinator.class);
 
     public Coordinator() {
         String coorIp = getIpAddress();
@@ -46,7 +45,6 @@ public class Coordinator {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
             e.printStackTrace();
-            //quit();
         }
     }
 
@@ -59,18 +57,9 @@ public class Coordinator {
         try {
             while(isStarted) {
                 Socket socket = serverSocket.accept();
-//                System.out.println(getLocalDataTime() + " New connection from " + socket.getRemoteSocketAddress()+ " is connected! ");
-//                StorageMessages.ProtoWrapper protoWrapper =
-//                        StorageMessages.ProtoWrapper.parseDelimitedFrom(
-//                                socket.getInputStream());
-//                System.out.println("requestor is "+ protoWrapper.getRequestor());
-//                System.out.println("IP is "+ protoWrapper.getIp());
 
-//                System.out.println("Function is "+ protoWrapper.getFunctionCase());
                 CoorSocketTask coorSocketTask = new CoorSocketTask(socket, coorMetaData);
                 executorService.execute(coorSocketTask);
-//                executorService.execute(new CoorSocketTask(socket, routingTable, nodeId));
-
             }
 
         } catch (IOException e) {
