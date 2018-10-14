@@ -7,10 +7,7 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.Scanner;
@@ -32,10 +29,11 @@ public class HeartBeatTask extends Thread{
     private boolean isConnectedCoor;
     private StorageMessages.ProtoWrapper protoWrapperIn;
     private StorageMessages.ProtoWrapper protoWrapperOut;
+    private InetAddress serverIP;
+
     private static Logger log;
 
     public HeartBeatTask(StMetaData stMetaData) {
-        this.hbSocket = new Socket();
         this.stMetaData = stMetaData;
         this.isConnectedCoor = false;
         this.rtVerstion = -1.0;
@@ -44,6 +42,7 @@ public class HeartBeatTask extends Thread{
         log = Logger.getLogger(HeartBeatTask.class);
     }
 
+    @Override
     public void run() {
         connectCoordinator();
         addNodeToCor();
@@ -51,25 +50,35 @@ public class HeartBeatTask extends Thread{
     }
 
     private void connectCoordinator() {
-        InetAddress serverIP;
         while(!isConnectedCoor) {
             System.out.print("Enter the coordinator's IP address : ");
             Scanner scanner = new Scanner(System.in);
             try {
                 serverIP = InetAddress.getByName(scanner.nextLine());
-                hbSocket.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
-                isConnectedCoor = true;
-                System.out.println("Successfully connecting with the coordinator !");
-
+                boolean result = establishConnection();
+                if(!result){
+                    System.out.println("Please enter the coordinator's IP address correctly!");
+                    connectCoordinator();
+                }
             } catch (UnknownHostException e) {
-                System.out.println("Please enter the coordinator's IP address correctly!");
-                connectCoordinator();
-                e.printStackTrace();
-            } catch (IOException e) {
-                System.out.println("Please enter the coordinator's IP address correctly!");
-                connectCoordinator();
                 e.printStackTrace();
             }
+
+        }
+    }
+
+    private boolean establishConnection() {
+        try {
+            hbSocket = new Socket();
+            hbSocket.connect(new InetSocketAddress(serverIP, Coordinator.PORT), 2000);
+            isConnectedCoor = true;
+            System.out.println("Successfully connecting with the coordinator !");
+            return true;
+
+        } catch (UnknownHostException e) {
+            return false;
+        } catch (IOException e) {
+            return false;
         }
     }
 
@@ -180,6 +189,10 @@ public class HeartBeatTask extends Thread{
 //                    for(Map.Entry<Integer, StorageNodeHashSpace> e : stMetaData.getRoutingTable().entrySet()){
 //                        log.info(e.getKey() + "    " + e.getValue().toString());
 //                    }
+                } catch (SocketException e) {
+                    reConnectCoor();
+                } catch (NullPointerException e) {
+                    reConnectCoor();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -192,6 +205,53 @@ public class HeartBeatTask extends Thread{
             }
 
         }
+    }
+
+    private void reConnectCoor(){
+        log.info("Waiting for the coordinator coming back");
+        while(!establishConnection()){
+        }
+
+        int nodeId = stMetaData.getStorageNodeInfo().getNodeId();
+        if(stMetaData == null){
+            System.out.println("metadata null");
+        }
+        if(stMetaData.getRoutingTable() == null){
+            System.out.println("routingtable null");
+        }
+        if(stMetaData.getRoutingTable().get(nodeId) == null){
+            System.out.println("sopace range null");
+        }
+
+
+
+        StorageMessages.StorageNodeHashSpace shMsgOut =
+                StorageMessages.StorageNodeHashSpace.newBuilder()
+                        .setSpaceBegin(stMetaData.getRoutingTable().get(nodeId).getSpaceRange()[0])
+                        .setSpaceEnd(stMetaData.getRoutingTable().get(nodeId).getSpaceRange()[1])
+                        .build();
+
+        StorageMessages.RoutingEle routingEleMsgOut =
+                StorageMessages.RoutingEle.newBuilder()
+                        .setNodeId(nodeId)
+                        .setStorageNodeHashSpace(shMsgOut)
+                        .setNodeNum(stMetaData.getRoutingTable().size())
+                        .build();
+
+        protoWrapperOut =
+                StorageMessages.ProtoWrapper.newBuilder()
+                        .setRequestor(SnSocketTask.STORAGENODE)
+                        .setIp(stMetaData.getStorageNodeInfo().getNodeIp())
+                        .setRecorveryNodeInfo(routingEleMsgOut)
+                        .build();
+
+
+        try {
+            protoWrapperOut.writeDelimitedTo(hbSocket.getOutputStream());
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+        heartBeat();
     }
 
     public double getRtVerstion() {

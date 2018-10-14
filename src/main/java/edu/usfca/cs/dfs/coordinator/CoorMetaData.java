@@ -110,6 +110,7 @@ public class CoorMetaData {
     public synchronized ArrayList<StorageMessages.ActiveNode> getActiveNodesList() {
         ArrayList<StorageMessages.ActiveNode> sa = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
+            System.out.println(sn.getNodeId() + " is :" + sn.isActive());
             if(sn.isActive()) {
                 StorageMessages.ActiveNode activeNodeMsg
                         = StorageMessages.ActiveNode.newBuilder()
@@ -129,13 +130,15 @@ public class CoorMetaData {
     public synchronized ArrayList<StorageMessages.DiskSpace> getTotalDiskSpace() {
         ArrayList<StorageMessages.DiskSpace> sd = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
-            StorageMessages.DiskSpace diskSpaceMsg
-                    = StorageMessages.DiskSpace.newBuilder()
-                    .setNodeId(sn.getNodeId())
-                    .setNodeIp(sn.getNodeIp())
-                    .setSpace(sn.getSpaceCap())
-                    .build();
-            sd.add(diskSpaceMsg);
+            if(sn.isActive()) {
+                StorageMessages.DiskSpace diskSpaceMsg
+                        = StorageMessages.DiskSpace.newBuilder()
+                        .setNodeId(sn.getNodeId())
+                        .setNodeIp(sn.getNodeIp())
+                        .setSpace(sn.getSpaceCap())
+                        .build();
+                sd.add(diskSpaceMsg);
+            }
         }
         return sd;
     }
@@ -147,15 +150,24 @@ public class CoorMetaData {
     public synchronized ArrayList<StorageMessages.NodeRequestsNum> getNodeRuquestsNum() {
         ArrayList<StorageMessages.NodeRequestsNum> sr = new ArrayList<>();
         for(StorageNodeInfo sn: metaDataTable.values()) {
-            StorageMessages.NodeRequestsNum nodeRequestsNumMsg
-                    = StorageMessages.NodeRequestsNum.newBuilder()
-                    .setNodeId(sn.getNodeId())
-                    .setNodeIp(sn.getNodeIp())
-                    .setRequestsNum(sn.getRequestsNum())
-                    .build();
-            sr.add(nodeRequestsNumMsg);
+            if(sn.isActive()) {
+                StorageMessages.NodeRequestsNum nodeRequestsNumMsg
+                        = StorageMessages.NodeRequestsNum.newBuilder()
+                        .setNodeId(sn.getNodeId())
+                        .setNodeIp(sn.getNodeIp())
+                        .setRequestsNum(sn.getRequestsNum())
+                        .build();
+                sr.add(nodeRequestsNumMsg);
+            }
         }
         return sr;
+    }
+
+    public synchronized void removeFailNode(int nodeId) {
+        routingTable.remove(nodeId);
+        metaDataTable.get(nodeId).setActive(false);
+        System.out.println("nodeId is active? " + metaDataTable.get(nodeId).isActive());
+        setRtVersion(getRtVersion() + 0.1);
     }
 
     public synchronized int getNodeId() {

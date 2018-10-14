@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -41,12 +42,15 @@ public class CoorSocketTask implements Runnable {
      * Main run method:
      * See what kind of the requestor is
      */
+    @Override
     public void run() {
         try {
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     socket.getInputStream());
             String requestor = protoWrapperIn.getRequestor();
             String functionType = protoWrapperIn.getFunctionCase().toString();
+
+            int removeNodeId = protoWrapperIn.getRemoveNodeId();
 
             log.info("A " + requestor +" has connected");
             log.info("IP address is " + protoWrapperIn.getIp());
@@ -55,6 +59,13 @@ public class CoorSocketTask implements Runnable {
                 clientRequest();
             }else if (requestor.equals(STORAGENODE)) {
                 storageNodeRequest(functionType);
+            }
+
+
+            else if (requestor.equals(CLIENT) && removeNodeId >= 0) {
+//                int removeNodeId = protoWrapperIn.getRemoveNodeId();
+                log.error(removeNodeId +" is being removed");
+                removeNode(removeNodeId);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -169,8 +180,9 @@ public class CoorSocketTask implements Runnable {
                 addNodeRequest();
                 heartBeat();
                 break;
-            case "REMOVENODE":
-                removeNodeRequest();
+            case "RECORVERYNODEINFO":
+                recorveryNodeInfo();
+                heartBeat();
                 break;
             default: break;
         }
@@ -216,6 +228,21 @@ public class CoorSocketTask implements Runnable {
         coorMetaData.setRtVersion(coorMetaData.getRtVersion() + 0.1);
     }
 
+    private void recorveryNodeInfo() {
+        StorageMessages.RoutingEle routingEleMsgIn = protoWrapperIn.getRecorveryNodeInfo();
+        StorageMessages.StorageNodeHashSpace storageNodeHashSpaceMsgIn = routingEleMsgIn.getStorageNodeHashSpace();
+        int nodeId = routingEleMsgIn.getNodeId();
+        int totalNodeNum = coorMetaData.getRoutingTableSize() + 1;
+        int[] spaceRange = new int[]{storageNodeHashSpaceMsgIn.getSpaceBegin(), storageNodeHashSpaceMsgIn.getSpaceEnd()};
+        int nodeNum = routingEleMsgIn.getNodeNum();
+
+        StorageNodeHashSpace snhs = new StorageNodeHashSpace(protoWrapperIn.getIp(), spaceRange);
+
+        coorMetaData.addNodeToRoutingTable(totalNodeNum, nodeId, snhs);
+        coorMetaData.setRtVersion(coorMetaData.getRtVersion() + 0.1);
+        coorMetaData.setNodeId(nodeNum - 1);
+    }
+
     /**
      * After the new storage node add into the hash space,
      * heartbeat to get/update storage node Info from storage node
@@ -251,10 +278,22 @@ public class CoorSocketTask implements Runnable {
                 removeNode(this.nodeId);
                 break;
 
-            }
-            catch (IOException e) {
-                log.error("Heart Beat error from " + this.nodeId +" : " + e.getMessage());
+            } catch (SocketException e) {
+                log.error("Heart Beat error from " + this.nodeId + " : " + e.getMessage());
+                log.info("This node has been removed");
+                removeNode(this.nodeId);
                 e.printStackTrace();
+                break;
+            } catch (NullPointerException e){
+                log.info("This node has been removed");
+                if(protoWrapperIn == null){
+                    removeNode(this.nodeId);
+                }
+                break;
+            } catch (IOException e) {
+                log.error("IO Exception");
+                e.printStackTrace();
+                break;
             }
         }
     }
@@ -267,7 +306,16 @@ public class CoorSocketTask implements Runnable {
         StorageMessages.StorageNodeInfo snMsg
                 = heartBeatInMsg.getStorageNodeInfo();
 
-        StorageNodeInfo sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), snMsg.getActive(), snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
+        int nodeId = snMsg.getNodeId();
+        StorageNodeInfo sn;
+        if(!coorMetaData.getMetaDataTable().containsKey(nodeId) || coorMetaData.getMetaDataTable().get(nodeId).isActive()){
+             sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), true, snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
+
+        } else {
+             sn = new StorageNodeInfo(snMsg.getNodeId(), protoWrapperIn.getIp(), false, snMsg.getSpaceAvailable(), snMsg.getRequestsNum());
+
+        }
+
         log.info(sn.toString());
         coorMetaData.addNodeToMetaDataTable(sn.getNodeId(), sn);
     }
@@ -299,24 +347,29 @@ public class CoorSocketTask implements Runnable {
         }
         return heartBeatMsgOut;
     }
-    private void removeNodeRequest() {
-        //removeNode();
-    }
+//    private void removeNodeRequest() {
+//        //removeNode();
+//    }
 
     private void removeNode(int nodeId){
+        coorMetaData.removeFailNode(nodeId);
+        log.info(nodeId +" has been removed from the routing table");
         Hashtable<Integer, StorageNodeHashSpace> routingTable = coorMetaData.getRoutingTable();
         for(int id : routingTable.keySet()){
             if(id != nodeId){
-                moveFiles(id);
+                moveFiles(id, nodeId);
                 break;
             }
         }
     }
 
 
-    private void moveFiles(int nodeId){
-//        Thread t = new MoveFileTask(nodeIp, failNodeId);
-//        t.start();
+    private void moveFiles(int nodeId, int failNodeId){
+        String nodeIp = coorMetaData.getRoutingTable().get(nodeId).getNodeIp();
+        log.info("Tell the other other node to move files by "+ nodeId + "=>" + nodeIp);
+
+        Runnable r = new MoveFileTask(nodeIp, failNodeId);
+        r.run();
     }
 
 

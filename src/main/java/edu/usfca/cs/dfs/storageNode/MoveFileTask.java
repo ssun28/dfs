@@ -1,9 +1,6 @@
-package edu.usfca.cs.dfs.coordinator;
+package edu.usfca.cs.dfs.storageNode;
 
 import edu.usfca.cs.dfs.StorageMessages;
-import edu.usfca.cs.dfs.storageNode.HeartBeatTask;
-import edu.usfca.cs.dfs.storageNode.SnSocketTask;
-import edu.usfca.cs.dfs.storageNode.StorageNode;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,29 +10,39 @@ import java.net.UnknownHostException;
 
 public class MoveFileTask implements Runnable {
 
-    private String nodeIp;
+    private String chunkName;
+    private String destIp;
+    private String sourceIp;
     private int failNodeId;
 
-    public MoveFileTask(String nodeIp, int failNodeId) {
-        this.nodeIp = nodeIp;
+
+    public MoveFileTask(String chunkName, String destIp, String sourceIp, int failNodeId) {
+        this.chunkName = chunkName;
+        this.destIp = destIp;
+        this.sourceIp = sourceIp;
         this.failNodeId = failNodeId;
     }
 
+    /**
+     *
+     */
     @Override
     public void run() {
         Socket socket = new Socket();
         try {
-            InetAddress serverIP = InetAddress.getByName(nodeIp);
+            InetAddress serverIP = InetAddress.getByName(destIp);
             socket.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
 
             StorageMessages.RemoveNode removeNodeMsgOut =
                     StorageMessages.RemoveNode.newBuilder()
                     .setFailNodeId(failNodeId)
+                    .setChunkName(chunkName)
+                    .setSouceNodeIp(sourceIp)
                     .build();
 
             StorageMessages.ProtoWrapper protoWrapperOut
                     = StorageMessages.ProtoWrapper.newBuilder()
-                    .setRequestor(SnSocketTask.COORDINATOR)
+                    .setRequestor(SnSocketTask.STORAGENODE)
                     .setRemoveNode(removeNodeMsgOut)
                     .build();
 
@@ -48,7 +55,7 @@ public class MoveFileTask implements Runnable {
         } finally {
             quit(socket);
         }
-}
+    }
 
     private void quit(Socket socket){
         try {
@@ -57,5 +64,4 @@ public class MoveFileTask implements Runnable {
             e.printStackTrace();
         }
     }
-
 }

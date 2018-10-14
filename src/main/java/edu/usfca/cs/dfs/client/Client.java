@@ -29,16 +29,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class Client {
 
-//    public static final int PORT = 37000;
     public static final int CHUNKSIZE = 8000000;
     private static final int NTHREADS = 20;
     public static final String CLIENT = "client";
     private static final String STORAGENODE = "storageNode";
     private static final String COORDINATOR = "coordinator";
     private static DecimalFormat df2 = new DecimalFormat(".##");
-
-
-    public enum functionType {STORE_CHUNK,ASK_INFO};
 
     private Socket client;
     private InetAddress serverIP;
@@ -102,8 +98,61 @@ public class Client {
                     break;
                 default: break;
             }
+        }else if (clientOption == 8) {
+            connectServer(COORDINATOR);
+            removeNodeOperation();
+            quit();
+        }else if (clientOption == 9) {
+            connectServer(STORAGENODE);
+            printAllfilesTable();
+            quit();
         }
+
         start();
+    }
+
+
+    /**
+     * Print all files table for test
+     */
+    private void printAllfilesTable() {
+        try {
+            System.out.println("ServerIp = " + serverIP);
+            client = new Socket();
+            client.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
+
+            protoWrapperOut =
+                    StorageMessages.ProtoWrapper.newBuilder()
+                    .setRequestor(CLIENT)
+                    .setIp(clientIp)
+                    .setPrintAllfilesTable("true")
+                    .build();
+
+            protoWrapperOut.writeDelimitedTo(client.getOutputStream());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Remove the node for test
+     */
+    private void removeNodeOperation() {
+        System.out.print("Enter the node id for removing: ");
+        Scanner scanner = new Scanner(System.in);
+        int removeNodeId = scanner.nextInt();
+        protoWrapperOut =
+                StorageMessages.ProtoWrapper.newBuilder()
+                .setRequestor(CLIENT)
+                .setIp(clientIp)
+                .setRemoveNodeId(removeNodeId)
+                .build();
+        try {
+            protoWrapperOut.writeDelimitedTo(client.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -124,10 +173,13 @@ public class Client {
             System.out.println("6. Retrieve file");
             System.out.println("7. Exit");
 
+//            System.out.println("8. Remove Node");
+//            System.out.println("9. print all files table");
+
             System.out.print("Your option is: ");
             Scanner scanner = new Scanner(System.in);
             userOption = scanner.nextInt();
-            if (userOption > 0 && userOption < 8) {
+            if (userOption > 0 && userOption < 10) {
                 isRightOption = true;
             }
         }
@@ -324,7 +376,6 @@ public class Client {
         String fileType = "";
 
         System.out.println("Enter the file you want to store: ");
-//        System.out.print("./input/");
         System.out.print("File path:");
         Scanner scanner = new Scanner(System.in);
         String inputFilePath = scanner.nextLine();
@@ -332,8 +383,6 @@ public class Client {
 
         String file = f.getName();
 
-        System.out.println("inputFilePath = " + inputFilePath);
-        System.out.println("file = " + file);
         if(file.contains(".")) {
             fileName = file.split("\\.")[0];
             fileType = "." + file.split("\\.")[1];
@@ -355,15 +404,13 @@ public class Client {
             byte[] b = new byte[CHUNKSIZE];
             ClientMetaData clientMetaData = new ClientMetaData(fileName, fileType, (int)numChunks, clientIp, serverIP);
             while((size = fs.read(b)) != -1) {
-                log.info(chunkId + "'s size = " + size + " with byte[] size:" + b.length);
+//                log.info(chunkId + "'s size = " + size + " with byte[] size:" + b.length);
 //                ByteString data = ByteString.copyFrom(b, 0, size);
-
                 StoreChunkTask storeChunkTask = new StoreChunkTask(clientMetaData, chunkId, b, size);
                 executorService.execute(storeChunkTask);
 
                 b = new byte[CHUNKSIZE];
                 chunkId++;
-
             }
             executorService.shutdown();
             try {
@@ -393,10 +440,8 @@ public class Client {
             Scanner scanner = new Scanner(System.in);
             String inputFile = scanner.nextLine();
 
-
             client = new Socket();
             client.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
-
 
             StorageMessages.RetrieveFile retrieveFileMsgOut
                     = StorageMessages.RetrieveFile.newBuilder()
@@ -415,29 +460,26 @@ public class Client {
             protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                     client.getInputStream());
 
-
-
             StorageMessages.RetrieveFile retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
             StorageMessages.ResChunksPos resChunksPos = retrieveFileMsgIn.getResChunksPos();
 
             Map<String, StorageMessages.NodeIdList> retrieveChunksPosTableMap = resChunksPos.getChunksPosMap();
             Map<Integer, String> nodeIpTableMap = resChunksPos.getNodeIpTableMap();
 
-            ///can't connect the nodeId
             if(retrieveChunksPosTableMap.size() != 0) {
                 ExecutorService executorService = Executors.newFixedThreadPool(NTHREADS);
                 Hashtable<Integer, byte[]> chunkTable = new Hashtable<>();
-
                 for(Map.Entry<String, StorageMessages.NodeIdList> c : retrieveChunksPosTableMap.entrySet()) {
                     String retrieveChunkName = c.getKey();
                     StorageMessages.NodeIdList nodeIdList = c.getValue();
-                    ////
+
+                    ///
                     int nodeId = nodeIdList.getNodeId(0);
                     String nodeIp = nodeIpTableMap.get(nodeId);
 
-                    RetrieveChunkTask retrieveChunkTask = new RetrieveChunkTask(retrieveChunkName, nodeId, nodeIp, clientIp, chunkTable);
+                    RetrieveChunkTask retrieveChunkTask = new RetrieveChunkTask(retrieveChunkName, nodeId, nodeIp,
+                            clientIp, chunkTable);
                     executorService.execute(retrieveChunkTask);
-
                 }
                 executorService.shutdown();
 
@@ -447,8 +489,6 @@ public class Client {
                     e.printStackTrace();
                 }
                 merge(chunkTable, inputFile);
-
-
             }else {
                 System.out.println("There is no such file store in the file system!");
                 System.out.println("Please make sure you type the correct file name.");
@@ -469,6 +509,11 @@ public class Client {
         }
     }
 
+    /**
+     * Merge the chunks to the whole file
+     * @param chunkTable
+     * @param fileName
+     */
     private void merge(Hashtable<Integer, byte[]> chunkTable, String fileName){
         File file = new File(StorageNode.DIR + fileName);
         System.out.println("chunkTable = " + chunkTable.size());
@@ -490,43 +535,13 @@ public class Client {
         }
     }
 
-//    /**
-//     * Get local date time
-//     * @return
-//     */
-//    public String getLocalDataTime() {
-//        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-//        LocalDateTime now = LocalDateTime.now();
-//        return dtf.format(now);
-//    }
-
     public static void main(String[] args) {
-//        double  MEGABYTE = 1024 * 1024 * 1024;
-//        DecimalFormat df2 = new DecimalFormat(".##");
-//
-//
-//        long a = System.currentTimeMillis();
-//        File file = new File("/");
-//        double b = (double)file.getUsableSpace()/ (1024.0 * 1024.0 * 1024.0);
-//        System.out.println("b = " + b);
-//
-//        File[] roots = File.listRoots();
-//        for(File file1 : roots) {
-//            System.out.println(file1.getPath());
-//            System.out.println("Free Space  = " + (double)file1.getFreeSpace()/(1024 * 1024 * 1024));
-//            System.out.println("Usable Space = " + (double)file1.getUsableSpace()/(1024 * 1024 * 1024));
-//            System.out.println("Total space = " + (double)file1.getTotalSpace()/(1024 * 1024 * 1024));
-//        }
-//
-//        System.out.println(df2.format(new File("/").getUsableSpace()/MEGABYTE)); //in GB
         String filePath = System.getProperty("user.dir")
                 + "/log4j.properties";
         PropertyConfigurator.configure(filePath);
+
         Client client = new Client();
-
         client.start();
-
-
     }
 
 }

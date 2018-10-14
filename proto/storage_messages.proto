@@ -8,6 +8,7 @@ message StoreChunk {
     bytes data = 4;
     int32 numChunks = 5;
     int32 chunkSize = 6;
+    string chunkCheckSum = 7;
 }
 
 message AskInfo {
@@ -20,7 +21,6 @@ message AskInfo {
         RequestsNum resRequestsNum = 6;
         bool nodeFilesList = 7;
         NodeFilesList resNodeFilesList = 8;
-        //StorageNodeInfo nodeInfo = 7;
     }
 }
 
@@ -69,6 +69,7 @@ message Heartbeat {
 message RoutingEle {
     int32 nodeId = 1;
     StorageNodeHashSpace storageNodeHashSpace = 2;
+    int32 nodeNum = 3;
 }
 
 message StorageNodeHashSpace {
@@ -86,25 +87,11 @@ message ReturnPosition {
     string toStoreNodeIp = 2;
 }
 
-//message UpdateAllFilesTable {
-//    map<string, NodesList> filesTableEles = 1;
-//}
-
 message UpdateAllFilesTable {
     string inputFileChunk = 1;
     int32 nodeId = 2;
 }
 
-//message FilesTableEle {
-//    string inputFileChunk = 1;
-//    NodesList nodesList = 2;
-//}
-//
-//message NodesList {
-//    repeated int32 nodeId = 1;
-//}
-
-//resChunkPosInfo = nodeId;nodeIp;numChunks
 message ResChunksPos {
     map<string, NodeIdList> ChunksPos = 1;
     map<int32, string> NodeIpTable = 2;
@@ -123,21 +110,28 @@ message RetrieveFile {
     }
 }
 
+message RemoveNode {
+    int32 failNodeId = 1;
+    string chunkName = 2;
+    string souceNodeIp = 3;
+}
+
 message ProtoWrapper {
     string requestor = 1;
     string ip = 2;
-    string timeStamp = 13;
+    int32 removeNodeId = 13;
     string response = 14;
     oneof function {
         string addNode = 3;
-        string removeNode = 4;
+        RemoveNode removeNode = 4;
+        RoutingEle recorveryNodeInfo = 15;
         string askPosition = 5;
         ReturnPosition returnPosition = 6;
         AskInfo askInfo = 7;
         Heartbeat heartbeat = 8;
         StoreChunk storeChunk = 9;
         RetrieveFile retrieveFile = 10;
-//        NodeFilesList nodeFilesList = 11;
+        string printAllfilesTable = 11;
         UpdateAllFilesTable updateAllFilesTable = 12;
     }
 

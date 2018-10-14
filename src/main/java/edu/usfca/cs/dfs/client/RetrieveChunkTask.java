@@ -2,6 +2,7 @@ package edu.usfca.cs.dfs.client;
 
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages;
+import edu.usfca.cs.dfs.storageNode.Chunk;
 import edu.usfca.cs.dfs.storageNode.StorageNode;
 import org.apache.log4j.Logger;
 
@@ -15,6 +16,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Hashtable;
 
+/**
+ * RetrieveChunkTask: parallel retrieve each chunk from storage node
+ */
 public class RetrieveChunkTask implements Runnable {
 
     private String retrieveChunkName;
@@ -24,8 +28,12 @@ public class RetrieveChunkTask implements Runnable {
     private StorageMessages.ProtoWrapper protoWrapperIn;
     private StorageMessages.ProtoWrapper protoWrapperOut;
     private Hashtable<Integer, byte[]> chunkTable;
+    private Chunk chunk;
+
+
 
     private static Logger log;
+
 
     public RetrieveChunkTask(String retrieveChunkName,
                              int nodeId,
@@ -40,89 +48,98 @@ public class RetrieveChunkTask implements Runnable {
         this.log = Logger.getLogger(RetrieveChunkTask.class);
     }
 
+    /**
+     * Main run:
+     * send the retrieve chunkName to the storage node and get
+     * back that chunk's info including the data
+     */
+    @Override
     public void run() {
         Socket socket = new Socket();
         try {
-        InetAddress serverIP = InetAddress.getByName(nodeIp);
-        socket.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
+            InetAddress serverIP = InetAddress.getByName(nodeIp);
+            socket.connect(new InetSocketAddress(serverIP, StorageNode.PORT), 2000);
 
-        StorageMessages.StoreChunk storeChunkMsgOut =
-                StorageMessages.StoreChunk.newBuilder()
-                .setFileName(retrieveChunkName)
-                .build();
+            StorageMessages.StoreChunk storeChunkMsgOut =
+                    StorageMessages.StoreChunk.newBuilder()
+                    .setFileName(retrieveChunkName)
+                    .build();
 
-        StorageMessages.RetrieveFile retrieveFileMsgOut =
-                StorageMessages.RetrieveFile.newBuilder()
-                .setRetrieveChunk(storeChunkMsgOut)
-                .build();
+            StorageMessages.RetrieveFile retrieveFileMsgOut =
+                    StorageMessages.RetrieveFile.newBuilder()
+                    .setRetrieveChunk(storeChunkMsgOut)
+                    .build();
 
-        protoWrapperOut =
-                StorageMessages.ProtoWrapper.newBuilder()
-                .setRequestor(Client.CLIENT)
-                .setIp(clientIp)
-                .setRetrieveFile(retrieveFileMsgOut)
-                .build();
+            protoWrapperOut =
+                    StorageMessages.ProtoWrapper.newBuilder()
+                    .setRequestor(Client.CLIENT)
+                    .setIp(clientIp)
+                    .setRetrieveFile(retrieveFileMsgOut)
+                    .build();
 
-        protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
 
-        protoWrapperIn =
-                StorageMessages.ProtoWrapper.parseDelimitedFrom(
+            protoWrapperIn =
+                    StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                                socket.getInputStream());
+
+            StorageMessages.RetrieveFile retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
+            StorageMessages.StoreChunk storeChunkMsgIn = retrieveFileMsgIn.getRetrieveChunk();
+            String fileName = storeChunkMsgIn.getFileName();
+            int chunkId = storeChunkMsgIn.getChunkId();
+            int size = storeChunkMsgIn.getChunkSize();
+            int numChunks = storeChunkMsgIn.getNumChunks();
+            String fileType = storeChunkMsgIn.getFileType();
+            String msgInCheckSum = storeChunkMsgIn.getChunkCheckSum();
+
+            String chunkName = fileName + "_" + chunkId + fileType;
+
+            chunk = new Chunk(fileName, chunkId, fileType, numChunks, size, msgInCheckSum);
+
+            ByteString bytes = storeChunkMsgIn.getData();
+            byte[] data= bytes.toByteArray();
+            String checkSum = toHex(data);
+            while(!msgInCheckSum.equals(checkSum)) {
+                protoWrapperOut =
+                        StorageMessages.ProtoWrapper.newBuilder()
+                                .setRequestor(Client.CLIENT)
+                                .setIp(clientIp)
+                                .setResponse("CheckSums not equal")
+                                .build();
+                try {
+                    protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
+
+                    protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
                             socket.getInputStream());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                protoWrapperIn =
+                        StorageMessages.ProtoWrapper.parseDelimitedFrom(
+                                socket.getInputStream());
 
-        StorageMessages.RetrieveFile retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
-        StorageMessages.StoreChunk storeChunkMsgIn = retrieveFileMsgIn.getRetrieveChunk();
-        String chunkName = storeChunkMsgIn.getFileName();
-        int chunkId = storeChunkMsgIn.getChunkId();
-        int size = storeChunkMsgIn.getChunkSize();
-        String msgInCheckSum = storeChunkMsgIn.getChunkCheckSum();
+                retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
+                storeChunkMsgIn = retrieveFileMsgIn.getRetrieveChunk();
 
-        ByteString bytes = storeChunkMsgIn.getData();
-        byte[] data= bytes.toByteArray();
-        String checkSum = toHex(data);
-        while(!msgInCheckSum.equals(checkSum)){
+                bytes = storeChunkMsgIn.getData();
+                data = bytes.toByteArray();
+                checkSum = toHex(data);
+                log.info(chunkId + " check sum is equal");
+            }
             protoWrapperOut =
                     StorageMessages.ProtoWrapper.newBuilder()
                             .setRequestor(Client.CLIENT)
                             .setIp(clientIp)
-                            .setResponse("CheckSums not equal")
+                            .setResponse("CheckSums equal")
                             .build();
-            try {
-                protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
 
-                protoWrapperIn = StorageMessages.ProtoWrapper.parseDelimitedFrom(
-                        socket.getInputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            protoWrapperIn =
-                    StorageMessages.ProtoWrapper.parseDelimitedFrom(
-                            socket.getInputStream());
+            protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
 
-            retrieveFileMsgIn = protoWrapperIn.getRetrieveFile();
-            storeChunkMsgIn = retrieveFileMsgIn.getRetrieveChunk();
+            log.info(fileName + " has been got from the storageNode successfully");
+            data = Arrays.copyOfRange(data, 0, size);
 
-            bytes = storeChunkMsgIn.getData();
-            data = bytes.toByteArray();
-            checkSum = toHex(data);
-            log.info(chunkId + " check sum is equal");
-
-        }
-
-        protoWrapperOut =
-                StorageMessages.ProtoWrapper.newBuilder()
-                        .setRequestor(Client.CLIENT)
-                        .setIp(clientIp)
-                        .setResponse("CheckSums equal")
-                        .build();
-
-        protoWrapperOut.writeDelimitedTo(socket.getOutputStream());
-
-
-        log.info(chunkName + " has been got from the storageNode successfully");
-        data = Arrays.copyOfRange(data, 0, size);
-
-        chunkTable.put(chunkId, data);
-        System.out.println(chunkId + " :" + chunkTable.size());
+            chunkTable.put(chunkId, data);
+            System.out.println(chunkId + " :" + chunkTable.size());
 
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -131,9 +148,12 @@ public class RetrieveChunkTask implements Runnable {
         } finally {
             quit(socket);
         }
-
     }
 
+    /**
+     * Close the socket
+     * @param socket
+     */
     private void quit(Socket socket){
         try {
             socket.close();
@@ -173,5 +193,9 @@ public class RetrieveChunkTask implements Runnable {
             System.err.println("SHA-1 algorithm is not available...");
         }
         return null;
+    }
+
+    public Chunk getChunk() {
+        return chunk;
     }
 }

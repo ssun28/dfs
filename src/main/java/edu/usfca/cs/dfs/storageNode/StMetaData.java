@@ -159,6 +159,11 @@ public class StMetaData {
     }
 
     public synchronized ArrayList<Integer> getFilePos(String chunkName){
+        for(int i : allFilesPosTable.get(chunkName)){
+            if(!routingTable.containsKey(i)) {
+                allFilesPosTable.get(chunkName).remove(i);
+            }
+        }
         return allFilesPosTable.get(chunkName);
     }
 
@@ -241,11 +246,24 @@ public class StMetaData {
         this.numOfChunksTable = numOfChunksTable;
     }
 
-    public synchronized Hashtable<String, Hashtable<String, String>> filesOnFailNode(int failNodeId) {
-        Hashtable<String, Hashtable<String, String>> filesOnFailNodeTable = new Hashtable<>();
+    public synchronized Hashtable<String, ArrayList<Integer>> filesOnFailNode(int failNodeId) {
+        Hashtable<String, ArrayList<Integer>> result = new Hashtable<>();
         for(Map.Entry<String, ArrayList<Integer>> chunk : allFilesPosTable.entrySet()) {
+            if(chunk.getValue().contains(failNodeId)){
+                // remove the fail node
+                int index = chunk.getValue().indexOf(failNodeId);
+                chunk.getValue().remove(index);
+                result.put(chunk.getKey(), chunk.getValue());
+            }
+        }
+        return result;
+    }
+
+
+    public synchronized void removeFailNode(int nodeId){
+        if(routingTable.containsKey(nodeId)){
+            routingTable.remove(nodeId);
 
         }
-        return filesOnFailNodeTable;
     }
 }

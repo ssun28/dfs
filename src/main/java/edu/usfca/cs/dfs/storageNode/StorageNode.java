@@ -91,45 +91,6 @@ public class StorageNode {
                 log.info(socket.getRemoteSocketAddress().toString() + " has connected ");
                 SnSocketTask snSocketTask = new SnSocketTask(socket, stMetaData);
                 executorService.execute(snSocketTask);
-//                while(true){
-//                    StorageMessages.ProtoWrapper protoWrapper =
-//                            StorageMessages.ProtoWrapper.parseDelimitedFrom(
-//                                    socket.getInputStream());
-//                    System.out.println("======================");
-//                    if(protoWrapper == null){
-//                        break;
-//                    }
-//                    String functionType = protoWrapper.getFunctionCase().toString();
-//                    if(protoWrapper.getRequestor().equals("client")) {
-//                        switch(functionType) {
-//                            case "STORECHUNK":
-//                                String requestor = protoWrapper.getRequestor();
-//                                String ip = protoWrapper.getIp();
-//                                StorageMessages.StoreChunk storeChunkMsg
-//                                        = protoWrapper.getStoreChunk();
-//                                String fileName = storeChunkMsg.getFileName();
-//                                int chunkId = storeChunkMsg.getChunkId();
-//                                System.out.println("chunkId = " + chunkId);
-//                                String fileType = storeChunkMsg.getFileType();
-//                                System.out.println("fileType = " + fileType);
-//                                int numChunks = storeChunkMsg.getNumChunks();
-//
-//                                byte[] b = storeChunkMsg.getData().toByteArray();
-//                                File file = new File(DIR + fileName + "_" + chunkId);
-//
-//                                try(FileOutputStream fo = new FileOutputStream(file)) {
-//                                    fo.write(b);
-//                                } catch (IOException e) {
-//                                    e.printStackTrace();
-//                                }
-//                                break;
-//
-//                        }
-//                    }
-//                    System.out.println("requestor is "+ protoWrapper.getRequestor());
-//                    System.out.println("IP is "+ protoWrapper.getIp());
-//                }
-
             }
 
         } catch (IOException e) {
